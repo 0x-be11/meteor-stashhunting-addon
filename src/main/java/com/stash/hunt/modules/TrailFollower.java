@@ -151,6 +151,13 @@ public class TrailFollower extends Module
         .build()
     );
 
+    public final Setting<ChunkTypes> chunkType = sgAdvanced.add(new EnumSetting.Builder<ChunkTypes>()
+        .name("Chunk Types")
+        .description("The types of chunks to follow.")
+        .defaultValue(ChunkTypes.ALL)
+        .build()
+    );
+
     public final Setting<Double> chunkFoundTimeout = sgAdvanced.add(new DoubleSetting.Builder()
         .name("Chunk Found Timeout")
         .description("The amount of MS without a chunk found to trigger circling.")
@@ -498,8 +505,26 @@ public class TrailFollower extends Module
         }
 
         // TODO: Add options for following certain types of chunks.
+
         // Check that the chunk is actually mapped, and that it is an old chunk
-        if (!isValidChunk(chunkPos, currentDimension)) return;
+        switch (chunkType.get()) {
+            case ONLY_OLD: {
+                if (!isValidChunk(chunkPos, currentDimension, true, false)) return;
+                break;
+            }
+            case OLD_AND_LOADED_IN_119: {
+                if (!isValidChunk(chunkPos, currentDimension, true, true)) return;
+                break;
+            }
+            case ONLY_NEW: {
+                if (!isValidChunk(chunkPos, currentDimension, false, true)) return;
+                break;
+            }
+            case ALL: {
+                if (!isValidChunk(chunkPos, currentDimension, null, null)) return;
+                break;
+            }
+        }
 
         seenChunksCache.put(chunkLong, Byte.MAX_VALUE);
 
@@ -585,7 +610,11 @@ public class TrailFollower extends Module
         targetYaw = Rotations.getYaw(targetPos);
     }
 
-    private boolean isValidChunk(ChunkPos chunkPos, RegistryKey<World> currentDimension)
+    /** Returns true if the chunk is valid, using the given inputs. If inputs are null, the result is ignored.
+     * @param expectedOldChunk if true, the chunk must be an old chunk
+     * @param expectedNewChunk if true, the chunk must be a new chunk
+     */
+    private boolean isValidChunk(ChunkPos chunkPos, RegistryKey<World> currentDimension, Boolean expectedOldChunk, Boolean expectedNewChunk)
     {
         PaletteNewChunks paletteNewChunks = ModuleManager.getModule(PaletteNewChunks.class);
         boolean is119NewChunk = paletteNewChunks
@@ -609,7 +638,19 @@ public class TrailFollower extends Module
                 currentDimension
             );
 
-        return isHighlighted && (!is119NewChunk || is112OldChunk);
+        boolean oldCondition = true;
+        boolean newCondition = true;
+
+        if (expectedOldChunk != null)
+        {
+            oldCondition = expectedOldChunk == is112OldChunk;
+        }
+        if (expectedNewChunk != null)
+        {
+            newCondition = expectedNewChunk == is119NewChunk;
+        }
+
+        return isHighlighted && oldCondition && newCondition;
     }
 
     private Vec3d calculateAveragePosition(ArrayDeque<Vec3d> positions)
@@ -661,11 +702,18 @@ public class TrailFollower extends Module
         RIGHT
     }
 
+    public enum ChunkTypes
+    {
+        ONLY_OLD, // only 1.12 chunks that are not 1.19 chunks
+        OLD_AND_LOADED_IN_119, // 1.12 chunks that are loaded in 1.19
+        ONLY_NEW, // only 1.19 chunks that are not 1.12 chunks
+        ALL // all chunks
+    }
+
     public enum TrailEndBehavior
     {
         DISABLE,
         FLY_TOWARDS_YAW,
         DISCONNECT
     }
-
 }
