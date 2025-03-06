@@ -504,20 +504,18 @@ public class TrailFollower extends Module
             }
         }
 
-        // TODO: Add options for following certain types of chunks.
-
         // Check that the chunk is actually mapped, and that it is an old chunk
         switch (chunkType.get()) {
             case ONLY_OLD: {
-                if (!isValidChunk(chunkPos, currentDimension, true, false)) return;
-                break;
-            }
-            case OLD_AND_LOADED_IN_119: {
                 if (!isValidChunk(chunkPos, currentDimension, true, true)) return;
                 break;
             }
+            case OLD_AND_LOADED_IN_119: {
+                if (!isValidChunk(chunkPos, currentDimension, true, false)) return;
+                break;
+            }
             case ONLY_NEW: {
-                if (!isValidChunk(chunkPos, currentDimension, false, true)) return;
+                if (!isValidChunk(chunkPos, currentDimension, false, false)) return;
                 break;
             }
             case ALL: {
@@ -639,7 +637,7 @@ public class TrailFollower extends Module
             );
 
         boolean oldCondition = true;
-        boolean newCondition = true;
+        boolean newCondition = false;
 
         if (expectedOldChunk != null)
         {
@@ -650,7 +648,7 @@ public class TrailFollower extends Module
             newCondition = expectedNewChunk == is119NewChunk;
         }
 
-        return isHighlighted && oldCondition && newCondition;
+        return isHighlighted && (oldCondition || !newCondition);
     }
 
     private Vec3d calculateAveragePosition(ArrayDeque<Vec3d> positions)
