@@ -132,14 +132,12 @@ public class GrimEfly extends Module {
     }
 
     private boolean startSprinting;
-    private boolean startForwards;
 
     @Override
     public void onActivate()
     {
         if (mc.player == null) return;
         startSprinting = mc.player.isSprinting();
-        startForwards = Input.isPressed(mc.options.forwardKey);
         paused.set(false);
         tempPath = null;
 
@@ -160,7 +158,6 @@ public class GrimEfly extends Module {
         }
 
         mc.player.setSprinting(startSprinting);
-        setPressed(mc.options.forwardKey, startForwards);
     }
 
     // 5 chunks forwards
@@ -175,9 +172,7 @@ public class GrimEfly extends Module {
     {
         if (mc.player == null) return;
 
-        setPressed(mc.options.forwardKey, true);
         mc.player.setSprinting(true);
-
         if (bounce.get())
         {
             if (tempPath != null && mc.player.getBlockPos().getSquaredDistance(tempPath) < 500)
