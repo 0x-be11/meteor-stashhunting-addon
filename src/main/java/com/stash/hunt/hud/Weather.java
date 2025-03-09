@@ -13,7 +13,7 @@ import net.minecraft.client.MinecraftClient;
 
 public class Weather extends HudElement {
     public static final HudElementInfo<Weather> INFO = new HudElementInfo<>(Addon.HUD_GROUP, "Weather", "Displays current weather", Weather::new);
-    private MinecraftClient mc;
+    private MinecraftClient mc = null;
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private boolean recalculateSize;
 
@@ -36,7 +36,7 @@ public class Weather extends HudElement {
         String textWidth = "Weather:            ";
         setSize(renderer.textWidth(textWidth, true, scale.get()), renderer.textHeight(true, scale.get()));
         String weather = "None";
-        if (mc.world.getDimension().bedWorks())
+        if (mc.world != null && mc.world.getDimension().bedWorks())
         {
             if (mc.world.isThundering())
             {

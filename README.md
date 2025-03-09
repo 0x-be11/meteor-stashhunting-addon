@@ -1,5 +1,5 @@
 # jeff mod (For minecraft 1.21.1 and 1.21.4)
-#### Make an issue or DM me on discord `0x658` with any questions
+#### Make an issue or DM me on discord `0x658` with any questions (Check the FAQ first)
 ## Features
 - GrimEfly (Credit to Divined for help with this)
   - Lets you fly with a chestplate on, which means you don't lose durability. An elytra is required in the hotbar.
@@ -7,7 +7,7 @@
   - Bounce in 1x2 tunnels can reach up to 130bps. (Make sure to use ViaFabric 1.20.4 if having issues)
 - AFKBoostFly (Useless on current 2b anticheat)
   - Makes you look up and down to gain momentum.
-- TrailFollower (Requires XaeroPlus, Credit to WarriorLost for creating the original TrailFollower this was based off)
+- TrailFollower (Credit to WarriorLost for creating the original TrailFollower this was based off)
   - Follows trails in all dimensions using either pitch40 or baritone. May break on path splits or other cases.
 - BetterStashFinder
   - Pretty much the same as meteors stash finder except some extra features:
@@ -22,16 +22,26 @@
   - Used alongside meteors pitch40. Auto sets min and max bounds so that you continue to gain height. Also has an auto firework mode for when you lose velocity.
 - NoJumpDelay
   - Surprisingly most clients don't have this, but why not have it on.
-- GrimAirPlace
+- GrimAirPlace (Possibly broken)
   - Meteor's airplace code but with a grim bypass.
 - Search Area
   - Requires some other mod to make you move.
   - Spirals you or goes in a rectangle area by changing where you look.
-- AutoLogY
-  - Disconnects you if you go below a certain Y value.
+- AutoLogPlus
+  - Provides some additional triggers to log out, such as logging at a certain Y value, or on low armor durability.
 - ChestIndex
   - Automatically opens chests in range and collects a list of every item inside. They can then be printed to the chat in different ways. You can also save them to a JSON file.
 - GotoPosition
   - Looks at the position specified and holds w.
 - HighlightOldLava
   - Highlights lava that is of a certain height. This used to be helpful for tracing paths in the nether but with new pallete newchunks its not really useful.
+
+## FAQ
+- Q: How do I install this / where is the jar file?
+  - A: Download the latest release from the releases tab on the right and put it in your mods folder.
+- Q: Why isn't mod x showing up?
+  - A: Make sure you have the required dependencies. For all mods to work it is recommended to have [XaeroPlus](https://github.com/rfresh2/XaeroPlus), [Xaero's Minimap](https://modrinth.com/mod/xaeros-minimap), [Baritone](https://github.com/cabaletta/baritone), and [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map).
+- Q: Why is Search Area going in a straight line?
+  - A: Search Area automatically saves your path, and will go back to where you left off if you start it again. If you want to make a new path, change the name or click the reset button.
+- Q: Why is my game crashing?
+  - A: There is a known crash when switched the modes on Search Area while using it - don't do that. Another common crash is due to using PathSeeker with this mod, if you are using that, try removing it and see if it fixes it first. Otherwise, please make an issue or DM me the crash report found in .minecraft/crash-reports.

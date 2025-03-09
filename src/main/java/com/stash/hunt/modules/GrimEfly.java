@@ -11,6 +11,7 @@ import meteordevelopment.meteorclient.utils.misc.input.Input;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.FireworkRocketItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -131,15 +132,14 @@ public class GrimEfly extends Module {
     }
 
     private boolean startSprinting;
-    private boolean startForwards;
 
     @Override
     public void onActivate()
     {
         if (mc.player == null) return;
         startSprinting = mc.player.isSprinting();
-        startForwards = Input.isPressed(mc.options.forwardKey);
         paused.set(false);
+        tempPath = null;
 
         if (bounce.get())
         {
@@ -158,24 +158,38 @@ public class GrimEfly extends Module {
         }
 
         mc.player.setSprinting(startSprinting);
-        setPressed(mc.options.forwardKey, startForwards);
     }
 
+    // 5 chunks forwards
+    private final double maxDistance = 16 * 5;
+
+    // a path used when there are no valid blocks in range.
+    // it will instead path to this and then when it gets close it will look for a valid block again
+    private BlockPos tempPath = null;
 
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
         if (mc.player == null) return;
 
-        setPressed(mc.options.forwardKey, true);
         mc.player.setSprinting(true);
-
         if (bounce.get())
         {
+            if (tempPath != null && mc.player.getBlockPos().getSquaredDistance(tempPath) < 500)
+            {
+                tempPath = null;
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
+            }
+            else if (tempPath != null)
+            {
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(tempPath));
+                return;
+            }
+
+
             // if still pathing, wait for that to complete
             if (highwayObstaclePasser.get() && BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().getGoal() != null)
             {
-                paused.set(true);
                 return;
             }
 
@@ -186,26 +200,41 @@ public class GrimEfly extends Module {
                 paused.set(true);
                 double targetYaw = lockYaw.get() ? yaw.get() : mc.player.getYaw();
                 Vec3d pos;
-                if (assumeHighwayDirs.get())
+                BlockPos goal = mc.player.getBlockPos();
+                double currDistance = distance.get(); // Keep checking farther distances until a goal is found that has a block beneath it
+                do
                 {
-                    Vec3d playerPos = normalizedPositionOnAxis(mc.player.getPos()).multiply(mc.player.getPos().multiply(1,0,1).length());
-                    pos = positionInDirection(playerPos, targetYaw, distance.get());
+                    if (currDistance > maxDistance)
+                    {
+                        tempPath = goal;
+                        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
+                        return;
+                    }
+                    if (assumeHighwayDirs.get())
+                    {
+                        Vec3d playerPos = normalizedPositionOnAxis(mc.player.getPos()).multiply(mc.player.getPos().multiply(1,0,1).length());
+                        pos = positionInDirection(playerPos, targetYaw, currDistance);
+                    }
+                    else
+                    {
+                        // TODO: Make this better
+                        pos = positionInDirection(mc.player.getPos(), targetYaw, currDistance);
+                    }
+                    goal = new BlockPos((int)pos.x + baritoneOffset.get().getX(), targetY.get() + baritoneOffset.get().getY(), (int)pos.z + baritoneOffset.get().getZ());
+                    currDistance++;
                 }
-                else
-                {
-                    // TODO: Make this better
-                    pos = positionInDirection(mc.player.getPos(), targetYaw, distance.get());
-                }
-                BlockPos goal = new BlockPos((int)pos.x + baritoneOffset.get().getX(), targetY.get() + baritoneOffset.get().getY(), (int)pos.z + baritoneOffset.get().getZ());
+                // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
+                while (mc.world.getBlockState(goal.down()).isAir() || mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL);
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
             }
             else
             {
                 // keep jumping
                 paused.set(false);
-                if (mc.player.isOnGround()) {
+                if (mc.player.isOnGround())
+                {
                     mc.player.jump();
-                };
+                }
 
                 // set yaw and pitch
                 if (lockYaw.get())

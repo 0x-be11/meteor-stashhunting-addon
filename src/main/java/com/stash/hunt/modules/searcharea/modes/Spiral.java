@@ -8,6 +8,7 @@ import net.minecraft.util.math.BlockPos;
 import java.io.*;
 
 import static com.stash.hunt.Utils.*;
+import static meteordevelopment.meteorclient.utils.player.ChatUtils.info;
 
 public class Spiral extends SearchAreaMode
 {
@@ -36,6 +37,7 @@ public class Spiral extends SearchAreaMode
                     FileReader reader = new FileReader(file);
                     pd = GSON.fromJson(reader, PathingDataSpiral.class);
                     reader.close();
+                    info("Loaded previously saved path, heading to where you left off.");
                 } catch (Exception ignored) {
 
                 }

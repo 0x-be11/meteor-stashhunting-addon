@@ -24,43 +24,44 @@ public class Addon extends MeteorAddon {
     public void onInitialize() {
         LOG.info("Initializing Jefff Mod");
 
-        // Modules
         Modules.get().add(new SearchArea());
-        Modules.get().add(new AutoLogY());
+        Modules.get().add(new AutoLogPlus());
         Modules.get().add(new GotoPosition());
         Modules.get().add(new ChestIndex());
         Modules.get().add(new HighlightOldLava());
-//        Modules.get().add(new FollowBaritonePath());
         Modules.get().add(new AFKBoostFly());
         Modules.get().add(new Pitch40Util());
 //        Modules.get().add(new AutoTrade());
 //        Modules.get().add(new XPBot());
 //        Modules.get().add(new UnknownAccountNotifier());
-        Modules.get().add(new GrimEfly());
+
         Modules.get().add(new NoJumpDelay());
         Modules.get().add(new GrimAirPlace());
         Modules.get().add(new DiscordNotifs());
-//        Modules.get().add(new ChunkSizeCalculator());
-
 //        Modules.get().add(new EndermanItemDetector());
+//        Modules.get().add(new GrimDuraFirework());
+//        Modules.get().add(new PacketTester());
 
+        boolean baritoneLoaded = checkModLoaded("baritone", "baritone-meteor");
+        boolean xaeroWorldMapLoaded = checkModLoaded("xaeroworldmap");
+        boolean xaeroMinimapLoaded = checkModLoaded("xaerominimap");
+        boolean xaeroPlusLoaded = checkModLoaded("xaeroplus");
 
-        if (FabricLoader.getInstance().isModLoaded("xaeroworldmap") && FabricLoader.getInstance().isModLoaded("xaerominimap"))
+        if (xaeroWorldMapLoaded && xaeroPlusLoaded)
         {
-            Modules.get().add(new BetterStashFinder());
+//            Modules.get().add(new MudCracker());
             Modules.get().add(new OldChunkNotifier());
-            Modules.get().add(new TrailFollower());
+            if (xaeroMinimapLoaded)
+            {
+                Modules.get().add(new BetterStashFinder());
+            }
+            if (baritoneLoaded)
+            {
+                Modules.get().add(new TrailFollower());
+                Modules.get().add(new GrimEfly());
+            }
         }
-        else
-        {
-            LOG.info("Xaeros minimap and world map not found, disabling modules that require it.");
-        }
 
-
-        // Commands
-//        Commands.add(new CommandExample());
-
-        // HUD
         Hud.get().register(Weather.INFO);
     }
 
@@ -72,5 +73,23 @@ public class Addon extends MeteorAddon {
     @Override
     public String getPackage() {
         return "com.stash.hunt";
+    }
+
+    private boolean checkModLoaded(String... modIds)
+    {
+        boolean loaded = false;
+        for (String id : modIds)
+        {
+            if (FabricLoader.getInstance().isModLoaded(id))
+            {
+                loaded = true;
+                break;
+            }
+        }
+        if (!loaded)
+        {
+            LOG.error("{} not found, disabling modules that require it.", modIds[0]);
+        }
+        return loaded;
     }
 }
