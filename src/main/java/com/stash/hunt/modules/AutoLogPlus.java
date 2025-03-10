@@ -2,10 +2,7 @@ package com.stash.hunt.modules;
 
 import com.stash.hunt.Addon;
 import meteordevelopment.meteorclient.events.world.TickEvent;
-import meteordevelopment.meteorclient.settings.BoolSetting;
-import meteordevelopment.meteorclient.settings.DoubleSetting;
-import meteordevelopment.meteorclient.settings.Setting;
-import meteordevelopment.meteorclient.settings.SettingGroup;
+import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
@@ -13,6 +10,7 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 
 public class AutoLogPlus extends Module
 {
@@ -50,6 +48,30 @@ public class AutoLogPlus extends Module
         .build()
     );
 
+    private final Setting<Boolean> logPosition = sgGeneral.add(new BoolSetting.Builder()
+        .name("Log Position")
+        .description("Logs out if you are within x blocks of this position. Y Position is not included")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<BlockPos> position = sgGeneral.add(new BlockPosSetting.Builder()
+        .name("Position")
+        .description("The position to log out at. Y position is ignored.")
+        .defaultValue(new BlockPos(0, 0, 0))
+        .visible(logPosition::get)
+        .build()
+    );
+
+    private final Setting<Double> distance = sgGeneral.add(new DoubleSetting.Builder()
+        .name("Distance")
+        .description("The distance from the position to log out at.")
+        .defaultValue(100)
+        .sliderRange(0, 1000)
+        .visible(logPosition::get)
+        .build()
+    );
+
     public AutoLogPlus()
     {
         super(Addon.CATEGORY, "auto-log-plus", "Provides some additional triggers to log out.");
@@ -63,26 +85,33 @@ public class AutoLogPlus extends Module
         if (logOnY.get() && mc.player.getY() < yLevel.get())
         {
             logOut("Player was at Y=" + mc.player.getY() + " which is below your limit of Y=" + yLevel.get());
+            return;
         }
-        else if (logArmor.get())
+        if (logArmor.get())
         {
-            if (logArmor.get())
+            for (int i = 0; i < 4; i++)
             {
-                for (int i = 0; i < 4; i++)
+                ItemStack armorPiece = mc.player.getInventory().getArmorStack(i);
+                if (armorPiece.isDamageable())
                 {
-                    ItemStack armorPiece = mc.player.getInventory().getArmorStack(i);
-                    if (armorPiece.isDamageable())
+                    int max = armorPiece.getMaxDamage();
+                    int current = armorPiece.getDamage();
+                    double percentUndamaged = 100 - ((double) current / max) * 100;
+                    if (percentUndamaged < armorPercent.get())
                     {
-                        int max = armorPiece.getMaxDamage();
-                        int current = armorPiece.getDamage();
-                        double percentUndamaged = 100 - ((double) current / max) * 100;
-                        if (percentUndamaged < armorPercent.get())
-                        {
-                            logOut("You had low armor");
-                        }
-                        return;
+                        logOut("You had low armor");
                     }
+                    return;
                 }
+            }
+        }
+        if (logPosition.get())
+        {
+            double distanceToTarget = mc.player.getPos().multiply(1,0,1).distanceTo(position.get().toCenterPos().multiply(1,0,1));
+            if (distanceToTarget < distance.get())
+            {
+                logOut("Player was within " + distanceToTarget + " blocks of the target position.");
+                return;
             }
         }
     }
