@@ -7,6 +7,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.network.packet.c2s.play.PickFromInventoryC2SPacket;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.item.ItemStack;
@@ -72,6 +73,13 @@ public class AutoLogPlus extends Module
         .build()
     );
 
+    private final Setting<Boolean> illegalDisconnect = sgGeneral.add(new BoolSetting.Builder()
+        .name("Illegal Disconnect")
+        .description("Disconnects from the server using the slot method.")
+        .defaultValue(false)
+        .build()
+    );
+
     public AutoLogPlus()
     {
         super(Addon.CATEGORY, "auto-log-plus", "Provides some additional triggers to log out.");
@@ -107,9 +115,12 @@ public class AutoLogPlus extends Module
         }
         if (logPosition.get())
         {
+//            info("log position check");
             double distanceToTarget = mc.player.getPos().multiply(1,0,1).distanceTo(position.get().toCenterPos().multiply(1,0,1));
+//            info("distance to target: " + distanceToTarget);
             if (distanceToTarget < distance.get())
             {
+//                info("would be logging out");
                 logOut("Player was within " + distanceToTarget + " blocks of the target position.");
                 return;
             }
@@ -123,6 +134,13 @@ public class AutoLogPlus extends Module
         {
             Modules.get().get(AutoReconnect.class).toggle();
         }
-        mc.player.networkHandler.onDisconnect(new DisconnectS2CPacket(Text.literal("[AutoLogPlus] " + reason)));
+        if (illegalDisconnect.get())
+        {
+            mc.player.networkHandler.sendPacket(new PickFromInventoryC2SPacket(-1));
+        }
+        else
+        {
+            mc.player.networkHandler.onDisconnect(new DisconnectS2CPacket(Text.literal("[AutoLogPlus] " + reason)));
+        }
     }
 }
