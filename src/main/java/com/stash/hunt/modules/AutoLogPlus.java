@@ -7,7 +7,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.packet.c2s.play.PickFromInventoryC2SPacket;
+import net.minecraft.network.packet.c2s.play.PickItemFromEntityC2SPacket;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.item.ItemStack;
@@ -136,7 +136,7 @@ public class AutoLogPlus extends Module
         }
         if (illegalDisconnect.get())
         {
-            mc.player.networkHandler.sendPacket(new PickFromInventoryC2SPacket(-1));
+            mc.player.networkHandler.sendPacket(new PickItemFromEntityC2SPacket(-1, false));
         }
         else
         {
