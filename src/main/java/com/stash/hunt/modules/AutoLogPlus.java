@@ -136,7 +136,7 @@ public class AutoLogPlus extends Module
         }
         if (illegalDisconnect.get())
         {
-            mc.player.networkHandler.sendPacket(new PickItemFromEntityC2SPacket(-1, true));
+            mc.player.networkHandler.sendChatMessage(String.valueOf((char)0));
         }
         else
         {
