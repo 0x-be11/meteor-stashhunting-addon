@@ -108,19 +108,16 @@ public class AutoLogPlus extends Module
                     if (percentUndamaged < armorPercent.get())
                     {
                         logOut("You had low armor");
+                        return;
                     }
-                    return;
                 }
             }
         }
         if (logPosition.get())
         {
-//            info("log position check");
             double distanceToTarget = mc.player.getPos().multiply(1,0,1).distanceTo(position.get().toCenterPos().multiply(1,0,1));
-//            info("distance to target: " + distanceToTarget);
             if (distanceToTarget < distance.get())
             {
-//                info("would be logging out");
                 logOut("Player was within " + distanceToTarget + " blocks of the target position.");
                 return;
             }
@@ -136,7 +133,7 @@ public class AutoLogPlus extends Module
         }
         if (illegalDisconnect.get())
         {
-            mc.player.networkHandler.sendPacket(new PickFromInventoryC2SPacket(-1));
+            mc.player.networkHandler.sendChatMessage(String.valueOf((char)0));
         }
         else
         {
