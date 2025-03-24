@@ -263,13 +263,13 @@ public class TrailFollower extends Module
             {
                 if (currentDimension.equals(World.END))
                 {
-                    log("There is no opposite dimension to the end. Disabling TrailFollower");
+                    info("There is no opposite dimension to the end. Disabling TrailFollower");
                     this.toggle();
                     return;
                 }
                 else if (currentDimension.equals(World.NETHER))
                 {
-                    log("Following overworld trails from the nether is not supported yet, sorry. Disabling TrailFollower");
+                    info("Following overworld trails from the nether is not supported yet, sorry. Disabling TrailFollower");
                     this.toggle();
                     return;
                 }
@@ -277,16 +277,16 @@ public class TrailFollower extends Module
             if (!currentDimension.equals(World.NETHER))
             {
                 followMode = FollowMode.YAWLOCK;
-                log("You are in the overworld or end, basic yaw mode will be used.");
+                info("You are in the overworld or end, basic yaw mode will be used.");
             }
             else
             {
                 try {
                     Class.forName("baritone.api.BaritoneAPI");
                     followMode = FollowMode.BARITONE;
-                    log("You are in the nether, baritone mode will be used.");
+                    info("You are in the nether, baritone mode will be used.");
                 } catch (ClassNotFoundException e) {
-                    log("Baritone is required to trail follow in the nether. Disabling TrailFollower");
+                    info("Baritone is required to trail follow in the nether. Disabling TrailFollower");
                     this.toggle();
                     return;
                 }
@@ -303,7 +303,7 @@ public class TrailFollower extends Module
                     if (pitch40Firework.get())
                     {
                         Setting<Boolean> setting = ((Setting<Boolean>)pitch40UtilModule.settings.get("Auto Firework"));
-                        log("Auto Firework enabled, if you want to change the velocity threshold or the firework cooldown check the settings under Pitch40Util.");
+                        info("Auto Firework enabled, if you want to change the velocity threshold or the firework cooldown check the settings under Pitch40Util.");
                         oldAutoFireworkValue = setting.get();
                         setting.set(true);
                     }
