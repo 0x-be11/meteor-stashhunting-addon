@@ -1,7 +1,7 @@
 # jeff mod (For minecraft 1.21.1 and 1.21.4)
 #### Make an issue or DM me on discord `0x658` with any questions (Check the FAQ first)
 ## Features
-- GrimEfly (Credit to Divined for help with this)
+- GrimEfly (Credit to [Divined](https://github.com/cmg-divined) for help with this)
   - Lets you fly with a chestplate on, which means you don't lose durability. An elytra is required in the hotbar.
   - Has a bounce mode with a baritone highway obstacle passer.
   - Bounce in 1x2 tunnels can reach up to 130bps. (Make sure to use ViaFabric 1.20.4 if having issues)
@@ -24,6 +24,8 @@
   - Surprisingly most clients don't have this, but why not have it on.
 - GrimAirPlace (Possibly broken)
   - Meteor's airplace code but with a grim bypass.
+- GrimFastFall
+  - Makes you fall faster than usual, and usually results in no fall damage. You can also do some weird stuff with an elytra to get a little boost.
 - Search Area
   - Requires some other mod to make you move.
   - Spirals you or goes in a rectangle area by changing where you look.
