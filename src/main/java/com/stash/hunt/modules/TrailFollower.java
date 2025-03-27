@@ -5,6 +5,7 @@ import baritone.api.pathing.goals.GoalXZ;
 import com.stash.hunt.Addon;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.stash.hunt.Utils;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
@@ -12,6 +13,8 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.render.color.Color;
+import meteordevelopment.meteorclient.utils.player.FindItemResult;
+import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.registry.RegistryKey;
@@ -20,6 +23,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.item.Items;
 import xaeroplus.XaeroPlus;
 import xaeroplus.event.ChunkDataEvent;
 import xaeroplus.module.ModuleManager;
@@ -77,10 +81,15 @@ public class TrailFollower extends Module
         .build()
     );
 
-    public final Setting<Boolean> pitch40 = sgGeneral.add(new BoolSetting.Builder()
-        .name("Auto Pitch 40")
-        .description("Incorporates pitch 40 into the follower.")
-        .defaultValue(true)
+    public enum FlightMode {
+        VANILLA,
+        PITCH40
+    }
+
+    public final Setting<FlightMode> flightMode = sgGeneral.add(new EnumSetting.Builder<FlightMode>()
+        .name("Flight Mode")
+        .description("Choose how TrailFollower flies.")
+        .defaultValue(FlightMode.PITCH40)
         .build()
     );
 
@@ -88,7 +97,7 @@ public class TrailFollower extends Module
         .name("Auto Firework")
         .description("Uses a firework automatically if your velocity is too low.")
         .defaultValue(true)
-        .visible(() -> pitch40.get())
+        .visible(() -> flightMode.get() == FlightMode.PITCH40)
         .build()
     );
 
@@ -295,17 +304,18 @@ public class TrailFollower extends Module
 
             if (followMode == FollowMode.YAWLOCK)
             {
-                Class<? extends Module> pitch40Util = Pitch40Util.class;
-                Module pitch40UtilModule = Modules.get().get(pitch40Util);
-                if (pitch40.get() && !pitch40UtilModule.isActive())
-                {
-                    pitch40UtilModule.toggle();
-                    if (pitch40Firework.get())
-                    {
-                        Setting<Boolean> setting = ((Setting<Boolean>)pitch40UtilModule.settings.get("Auto Firework"));
-                        info("Auto Firework enabled, if you want to change the velocity threshold or the firework cooldown check the settings under Pitch40Util.");
-                        oldAutoFireworkValue = setting.get();
-                        setting.set(true);
+                // disable Pitch40 if user selects VanillaFly
+                if (flightMode.get() == FlightMode.PITCH40) {
+                    Class<? extends Module> pitch40Util = Pitch40Util.class;
+                    Module pitch40UtilModule = Modules.get().get(pitch40Util);
+                    if (!pitch40UtilModule.isActive()) {
+                        pitch40UtilModule.toggle();
+                        if (pitch40Firework.get()) {
+                            Setting<Boolean> setting = ((Setting<Boolean>) pitch40UtilModule.settings.get("Auto Firework"));
+                            info("Auto Firework enabled, if you want to change the velocity threshold or the firework cooldown check the settings under Pitch40Util.");
+                            oldAutoFireworkValue = setting.get();
+                            setting.set(true);
+                        }
                     }
                 }
             }
@@ -347,7 +357,7 @@ public class TrailFollower extends Module
             {
                 Class<? extends Module> pitch40Util = Pitch40Util.class;
                 Module pitch40UtilModule = Modules.get().get(pitch40Util);
-                if (pitch40.get() && pitch40UtilModule.isActive())
+                if (flightMode.get() == FlightMode.PITCH40 && pitch40UtilModule.isActive())
                 {
                     pitch40UtilModule.toggle();
                 }
@@ -369,6 +379,10 @@ public class TrailFollower extends Module
             log("Circling to look for new chunks, abandoning trail in " + (trailTimeout.get() - (System.currentTimeMillis() - lastFoundTrailTime)) / 1000 + " seconds.");
         }
     }
+
+    private long lastRocketUse = 0;
+    private double targetPitch = 0;
+    private double yTarget = -1;
 
     @EventHandler
     private void onTick(TickEvent.Post event)
@@ -454,6 +468,9 @@ public class TrailFollower extends Module
             }
             case YAWLOCK: {
                 mc.player.setYaw(smoothRotation(getActualYaw(mc.player.getYaw()), targetYaw));
+                if (flightMode.get() == FlightMode.VANILLA) {
+                    handleVanillaFly();
+                }
                 break;
             }
         }
@@ -533,6 +550,7 @@ public class TrailFollower extends Module
                 lastFoundTrailTime = System.currentTimeMillis();
                 trail.addAll(possibleTrail);
                 possibleTrail.clear();
+                yTarget = -1; // this is only used for and effects Vanilla Fly if it is checked*
             }
             return;
         }
@@ -681,4 +699,63 @@ public class TrailFollower extends Module
         FLY_TOWARDS_YAW,
         DISCONNECT
     }
+    private void handleVanillaFly() {
+        if (!mc.player.isFallFlying()) {
+            mc.player.jump();
+            return;
+        }
+
+        double currentY = mc.player.getY();
+        if (yTarget == -1) yTarget = currentY;
+        double yDiff = currentY - yTarget;
+
+        if (Math.abs(yDiff) > 10.0) {
+            targetPitch = -Math.atan2(yDiff, 100) * (180 / Math.PI);
+        } else if (yDiff > 2.0) {
+            targetPitch = 10f;
+        } else if (yDiff < -2.0) {
+            targetPitch = -10f;
+        } else {
+            targetPitch = 0f;
+        }
+
+        float currentPitch = mc.player.getPitch();
+        float pitchDiff = (float) targetPitch - currentPitch;
+        mc.player.setPitch(currentPitch + pitchDiff * 0.1f);
+
+        if (System.currentTimeMillis() - lastRocketUse > 3000) {
+            tryUseFirework();
+        }
+    }
+
+    private void tryUseFirework() {
+        FindItemResult hotbar = InvUtils.findInHotbar(Items.FIREWORK_ROCKET);
+        if (!hotbar.found()) {
+            FindItemResult inv = InvUtils.find(Items.FIREWORK_ROCKET);
+            if (inv.found()) {
+                int hotbarSlot = findEmptyHotbarSlot();
+                if (hotbarSlot != -1) {
+                    InvUtils.move().from(inv.slot()).to(hotbarSlot);
+                } else {
+                    log("No empty hotbar slot available to move fireworks.");
+                    return;
+                }
+            } else {
+                log("No fireworks found in hotbar or inventory.");
+                return;
+            }
+        }
+        Utils.firework(mc, true);
+        lastRocketUse = System.currentTimeMillis();
+    }
+
+    private int findEmptyHotbarSlot() {
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getStack(i).isEmpty()) return i;
+        }
+        return -1;
+    }
+
+
+
 }
