@@ -22,7 +22,7 @@
   - Used alongside meteors pitch40. Auto sets min and max bounds so that you continue to gain height. Also has an auto firework mode for when you lose velocity.
 - NoJumpDelay
   - Surprisingly most clients don't have this, but why not have it on.
-- GrimAirPlace (Possibly broken)
+- GrimAirPlace
   - Meteor's airplace code but with a grim bypass.
 - GrimFastFall
   - Makes you fall faster than usual, and usually results in no fall damage. You can also do some weird stuff with an elytra to get a little boost.
