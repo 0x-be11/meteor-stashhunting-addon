@@ -356,6 +356,7 @@ public class TrailFollower extends Module
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("cancel");
                 break;
             }
+            // updated conditional in this code block
             case YAWLOCK: {
                 mc.player.setYaw(smoothRotation(getActualYaw(mc.player.getYaw()), targetYaw));
 
