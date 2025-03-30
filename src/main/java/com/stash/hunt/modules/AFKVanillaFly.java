@@ -29,6 +29,56 @@ public class AFKVanillaFly extends Module {
         }
     }
 
+    // used in TrailFollower module for the vanilla option
+    public void tickFlyLogic() {
+        if (mc.player == null) return;
+
+        double currentY = mc.player.getY();
+
+        if (mc.player.isFallFlying()) {
+            if (yTarget == -1 || !launched) {
+                yTarget = currentY;
+                launched = true;
+            }
+
+            double yDiff = currentY - yTarget;
+
+            if (Math.abs(yDiff) > 10.0) {
+                targetPitch = (float) (-Math.atan2(yDiff, 100) * (180 / Math.PI));
+            } else if (yDiff > 2.0) {
+                targetPitch = 10f;
+            } else if (yDiff < -2.0) {
+                targetPitch = -10f;
+            } else {
+                targetPitch = 0f;
+            }
+
+            float currentPitch = mc.player.getPitch();
+            float pitchDiff = targetPitch - currentPitch;
+            mc.player.setPitch(currentPitch + pitchDiff * 0.1f);
+
+            if (System.currentTimeMillis() - lastRocketUse > 3000) {
+                tryUseFirework();
+            }
+        } else {
+
+            if (!launched) {
+                mc.player.jump();
+                launched = true;
+            } else if (System.currentTimeMillis() - lastRocketUse > 1000) {
+                tryUseFirework();
+            }
+
+            yTarget = -1;
+        }
+    }
+    // this is also used in the TrailFollower module for this vanilla option
+    public void resetYLock() {
+        yTarget = -1;
+        launched = false;
+    }
+
+
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;

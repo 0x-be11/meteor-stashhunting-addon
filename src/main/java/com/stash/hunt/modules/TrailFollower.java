@@ -304,7 +304,7 @@ public class TrailFollower extends Module
 
             if (followMode == FollowMode.YAWLOCK)
             {
-                // disable Pitch40 if user selects VanillaFly
+                // ***this block replaced the old pitch40 boolean toggle and is now controlled through the flightMode enum. swapped the pitch40.get() check (from the old boolsetting) for an enumsetting check (flightMode)
                 if (flightMode.get() == FlightMode.PITCH40) {
                     Class<? extends Module> pitch40Util = Pitch40Util.class;
                     Module pitch40UtilModule = Modules.get().get(pitch40Util);
@@ -335,8 +335,7 @@ public class TrailFollower extends Module
     }
 
     @Override
-    public void onDeactivate()
-    {
+    public void onDeactivate() {
         // do this at the end to free memory
         seenChunksCache = Caffeine.newBuilder()
             .maximumSize(chunkCacheLength.get())
@@ -346,27 +345,35 @@ public class TrailFollower extends Module
         trail.clear();
         // If follow mode was never set due to baritone not being present, etc.
         if (followMode == null) return;
-        switch (followMode)
-        {
-            case BARITONE:
-            {
+        switch (followMode) {
+            case BARITONE: {
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("cancel");
                 break;
             }
-            case YAWLOCK:
-            {
-                Class<? extends Module> pitch40Util = Pitch40Util.class;
-                Module pitch40UtilModule = Modules.get().get(pitch40Util);
-                if (flightMode.get() == FlightMode.PITCH40 && pitch40UtilModule.isActive())
-                {
-                    pitch40UtilModule.toggle();
+            case YAWLOCK: {
+                mc.player.setYaw(smoothRotation(getActualYaw(mc.player.getYaw()), targetYaw));
+
+                if (flightMode.get() == FlightMode.VANILLA) {
+                    if (mc.player != null) {
+                        AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
+                        if (afkVanillaFly != null) afkVanillaFly.resetYLock();
+                    }
+
+            } else if (flightMode.get() == FlightMode.PITCH40) {
+                    Class<? extends Module> pitch40Util = Pitch40Util.class;
+                    Module pitch40UtilModule = Modules.get().get(pitch40Util);
+                    if (pitch40UtilModule.isActive()) {
+                        pitch40UtilModule.toggle();
+                    }
+                    ((Setting<Boolean>) pitch40UtilModule.settings.get("Auto Firework")).set(oldAutoFireworkValue);
                 }
-                ((Setting<Boolean>)pitch40UtilModule.settings.get("Auto Firework")).set(oldAutoFireworkValue);
+
+                break;
             }
         }
     }
 
-    private double targetYaw;
+            private double targetYaw;
 
     private int baritoneSetGoalTicks = 0;
 
@@ -550,7 +557,6 @@ public class TrailFollower extends Module
                 lastFoundTrailTime = System.currentTimeMillis();
                 trail.addAll(possibleTrail);
                 possibleTrail.clear();
-                yTarget = -1; // this is only used for and effects Vanilla Fly if it is checked*
             }
             return;
         }
@@ -699,63 +705,13 @@ public class TrailFollower extends Module
         FLY_TOWARDS_YAW,
         DISCONNECT
     }
+    // now handled thru handleVanillaFly method
     private void handleVanillaFly() {
-        if (!mc.player.isFallFlying()) {
-            mc.player.jump();
-            return;
-        }
+        if (flightMode.get() != FlightMode.VANILLA) return;
 
-        double currentY = mc.player.getY();
-        if (yTarget == -1) yTarget = currentY;
-        double yDiff = currentY - yTarget;
-
-        if (Math.abs(yDiff) > 10.0) {
-            targetPitch = -Math.atan2(yDiff, 100) * (180 / Math.PI);
-        } else if (yDiff > 2.0) {
-            targetPitch = 10f;
-        } else if (yDiff < -2.0) {
-            targetPitch = -10f;
-        } else {
-            targetPitch = 0f;
-        }
-
-        float currentPitch = mc.player.getPitch();
-        float pitchDiff = (float) targetPitch - currentPitch;
-        mc.player.setPitch(currentPitch + pitchDiff * 0.1f);
-
-        if (System.currentTimeMillis() - lastRocketUse > 3000) {
-            tryUseFirework();
+        AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
+        if (afkVanillaFly != null) {
+            afkVanillaFly.tickFlyLogic();
         }
     }
-
-    private void tryUseFirework() {
-        FindItemResult hotbar = InvUtils.findInHotbar(Items.FIREWORK_ROCKET);
-        if (!hotbar.found()) {
-            FindItemResult inv = InvUtils.find(Items.FIREWORK_ROCKET);
-            if (inv.found()) {
-                int hotbarSlot = findEmptyHotbarSlot();
-                if (hotbarSlot != -1) {
-                    InvUtils.move().from(inv.slot()).to(hotbarSlot);
-                } else {
-                    log("No empty hotbar slot available to move fireworks.");
-                    return;
-                }
-            } else {
-                log("No fireworks found in hotbar or inventory.");
-                return;
-            }
-        }
-        Utils.firework(mc, true);
-        lastRocketUse = System.currentTimeMillis();
-    }
-
-    private int findEmptyHotbarSlot() {
-        for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getStack(i).isEmpty()) return i;
-        }
-        return -1;
-    }
-
-
-
 }

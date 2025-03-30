@@ -29,6 +29,7 @@ public class Addon extends MeteorAddon {
         Modules.get().add(new GotoPosition());
         Modules.get().add(new ChestIndex());
         Modules.get().add(new HighlightOldLava());
+        Modules.get().add(new HighlightMapart());
         Modules.get().add(new AFKBoostFly());
         Modules.get().add(new AFKVanillaFly());
         Modules.get().add(new Pitch40Util());
