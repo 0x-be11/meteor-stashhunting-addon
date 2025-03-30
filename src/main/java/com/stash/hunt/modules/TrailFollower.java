@@ -80,7 +80,7 @@ public class TrailFollower extends Module
         .visible(() -> trailEndBehavior.get() == TrailEndBehavior.FLY_TOWARDS_YAW)
         .build()
     );
-
+    // changed to an enum dropdown for fly selection
     public enum FlightMode {
         VANILLA,
         PITCH40
@@ -301,9 +301,8 @@ public class TrailFollower extends Module
                 }
 
             }
-
+        // ***this block replaced the old pitch40 boolean toggle and is now controlled through the flightMode enum. swapped the pitch40.get() check (from the old boolsetting) for an enumsetting check (flightMode)
             if (followMode == FollowMode.YAWLOCK) {
-                // ***this block replaced the old pitch40 boolean toggle and is now controlled through the flightMode enum. swapped the pitch40.get() check (from the old boolsetting) for an enumsetting check (flightMode)
                 if (flightMode.get() == FlightMode.PITCH40) {
                     Class<? extends Module> pitch40Util = Pitch40Util.class;
                     Module pitch40UtilModule = Modules.get().get(pitch40Util);
@@ -323,7 +322,6 @@ public class TrailFollower extends Module
                     }
                 }
             }
-
             // set original pos to pathDistance blocks in the direction the player is facing
             Vec3d offset = (new Vec3d(Math.sin(-mc.player.getYaw() * Math.PI / 180), 0, Math.cos(-mc.player.getYaw() * Math.PI / 180)).normalize()).multiply(pathDistance.get());
             Vec3d targetPos = mc.player.getPos().add(offset);
@@ -340,7 +338,8 @@ public class TrailFollower extends Module
     }
 
     @Override
-    public void onDeactivate() {
+    public void onDeactivate()
+    {
         // do this at the end to free memory
         seenChunksCache = Caffeine.newBuilder()
             .maximumSize(chunkCacheLength.get())
@@ -350,8 +349,10 @@ public class TrailFollower extends Module
         trail.clear();
         // If follow mode was never set due to baritone not being present, etc.
         if (followMode == null) return;
-        switch (followMode) {
-            case BARITONE: {
+        switch (followMode)
+        {
+            case BARITONE:
+            {
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("cancel");
                 break;
             }
@@ -372,13 +373,12 @@ public class TrailFollower extends Module
                     }
                     ((Setting<Boolean>) pitch40UtilModule.settings.get("Auto Firework")).set(oldAutoFireworkValue);
                 }
-
                 break;
             }
         }
     }
 
-            private double targetYaw;
+    private double targetYaw;
 
     private int baritoneSetGoalTicks = 0;
 
@@ -704,4 +704,3 @@ public class TrailFollower extends Module
         DISCONNECT
     }
 }
-
