@@ -483,9 +483,6 @@ public class TrailFollower extends Module
             }
             case YAWLOCK: {
                 mc.player.setYaw(smoothRotation(getActualYaw(mc.player.getYaw()), targetYaw));
-                if (flightMode.get() == FlightMode.VANILLA) {
-                    handleVanillaFly();
-                }
                 break;
             }
         }
@@ -713,13 +710,5 @@ public class TrailFollower extends Module
         FLY_TOWARDS_YAW,
         DISCONNECT
     }
-    // now handled thru handleVanillaFly method
-    private void handleVanillaFly() {
-        if (flightMode.get() != FlightMode.VANILLA) return;
-
-        AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
-        if (afkVanillaFly != null) {
-            afkVanillaFly.tickFlyLogic();
-        }
-    }
 }
+

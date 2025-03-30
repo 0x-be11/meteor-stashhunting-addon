@@ -29,7 +29,7 @@ public class AFKVanillaFly extends Module {
         }
     }
 
-    // used in TrailFollower module for the vanilla option
+    // this method is now then default logic, it did not need to be called in TrailFollower
     public void tickFlyLogic() {
         if (mc.player == null) return;
 
@@ -72,7 +72,7 @@ public class AFKVanillaFly extends Module {
             yTarget = -1;
         }
     }
-    // this is also used in the TrailFollower module for this vanilla option
+
     public void resetYLock() {
         yTarget = -1;
         launched = false;
@@ -84,7 +84,6 @@ public class AFKVanillaFly extends Module {
         tickFlyLogic();
     }
 
-    // got rid of the duplicate logic :p but I still need these two methods
 
     private void tryUseFirework() {
         FindItemResult hotbar = InvUtils.findInHotbar(Items.FIREWORK_ROCKET);
