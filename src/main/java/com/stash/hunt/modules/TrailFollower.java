@@ -359,15 +359,12 @@ public class TrailFollower extends Module
                 mc.player.setYaw(smoothRotation(getActualYaw(mc.player.getYaw()), targetYaw));
 
                 if (flightMode.get() == FlightMode.VANILLA) {
-                    if (mc.player != null) {
-                        AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
-                        if (afkVanillaFly != null) afkVanillaFly.resetYLock();
-                        if (afkVanillaFly.isActive()) {
-                            afkVanillaFly.toggle();
-                        }
+                    AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
+                    if (afkVanillaFly != null) {
+                        afkVanillaFly.resetYLock(); // Optional: resets the Y-lock when deactivating TrailFollower
+                        if (afkVanillaFly.isActive()) afkVanillaFly.toggle();
                     }
-
-            } else if (flightMode.get() == FlightMode.PITCH40) {
+                } else if (flightMode.get() == FlightMode.PITCH40) {
                     Class<? extends Module> pitch40Util = Pitch40Util.class;
                     Module pitch40UtilModule = Modules.get().get(pitch40Util);
                     if (pitch40UtilModule.isActive()) {
@@ -394,10 +391,6 @@ public class TrailFollower extends Module
             log("Circling to look for new chunks, abandoning trail in " + (trailTimeout.get() - (System.currentTimeMillis() - lastFoundTrailTime)) / 1000 + " seconds.");
         }
     }
-
-    private long lastRocketUse = 0;
-    private double targetPitch = 0;
-    private double yTarget = -1;
 
     @EventHandler
     private void onTick(TickEvent.Post event)
