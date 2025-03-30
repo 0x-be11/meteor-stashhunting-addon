@@ -81,46 +81,9 @@ public class AFKVanillaFly extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null) return;
-
-        double currentY = mc.player.getY();
-
-        if (!mc.player.isFallFlying()) {
-            if (!launched) {
-                mc.player.jump();
-                launched = true;
-                return;
-            } else {
-                if (System.currentTimeMillis() - lastRocketUse > 2000) {
-                    tryUseFirework();
-                }
-                return;
-            }
-        }
-
-        if (yTarget == -1) yTarget = currentY;
-        double yDiff = currentY - yTarget;
-
-        if (Math.abs(yDiff) > 10.0) {
-            targetPitch = (float) (-Math.atan2(yDiff, 100) * (180 / Math.PI));
-        } else {
-            if (yDiff > 2.0) {
-                targetPitch = 10f;
-            } else if (yDiff < -2.0) {
-                targetPitch = -10f;
-            } else {
-                targetPitch = 0f;
-            }
-        }
-
-        float currentPitch = mc.player.getPitch();
-        float pitchDiff = targetPitch - currentPitch;
-        mc.player.setPitch(currentPitch + pitchDiff * 0.1f);
-
-        if (System.currentTimeMillis() - lastRocketUse > 3000) {
-            tryUseFirework();
-        }
+        tickFlyLogic();
     }
+
 
     private void tryUseFirework() {
         FindItemResult hotbar = InvUtils.findInHotbar(Items.FIREWORK_ROCKET);

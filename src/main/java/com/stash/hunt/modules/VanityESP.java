@@ -18,7 +18,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.chunk.WorldChunk;
 
-public class HighlightMapart extends Module {
+public class VanityESP extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgColors = settings.createGroup("Colors");
 
@@ -43,6 +43,13 @@ public class HighlightMapart extends Module {
         .build()
     );
 
+    private final Setting<SettingColor> mapOutlineColor = sgColors.add(new ColorSetting.Builder()
+        .name("map-outline-color")
+        .description("Outline color for item frames containing maps.")
+        .defaultValue(new SettingColor(255, 255, 0, 255))
+        .build()
+    );
+
     private final Setting<SettingColor> bannerColor = sgColors.add(new ColorSetting.Builder()
         .name("banner-fill")
         .description("Fill color for banners.")
@@ -57,8 +64,8 @@ public class HighlightMapart extends Module {
         .build()
     );
 
-    public HighlightMapart() {
-        super(Addon.CATEGORY, "HighlightMapart", "Highlights map item frames and banners for mapart detection.");
+    public VanityESP() {
+        super(Addon.CATEGORY, "VanityESP", "Highlights maparts and banners");
     }
 
     @EventHandler
@@ -71,7 +78,7 @@ public class HighlightMapart extends Module {
 
                 Box box = frame.getBoundingBox();
                 Color fill = new Color(mapColor.get());
-                Color outline = new Color(mapColor.get()).a(255);
+                Color outline = new Color(mapOutlineColor.get());
                 event.renderer.box(box, fill, outline, ShapeMode.Both, 0);
             }
         }

@@ -302,8 +302,7 @@ public class TrailFollower extends Module
 
             }
 
-            if (followMode == FollowMode.YAWLOCK)
-            {
+            if (followMode == FollowMode.YAWLOCK) {
                 // ***this block replaced the old pitch40 boolean toggle and is now controlled through the flightMode enum. swapped the pitch40.get() check (from the old boolsetting) for an enumsetting check (flightMode)
                 if (flightMode.get() == FlightMode.PITCH40) {
                     Class<? extends Module> pitch40Util = Pitch40Util.class;
@@ -317,8 +316,14 @@ public class TrailFollower extends Module
                             setting.set(true);
                         }
                     }
+                } else if (flightMode.get() == FlightMode.VANILLA) {
+                    AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
+                    if (!afkVanillaFly.isActive()) {
+                        afkVanillaFly.toggle();
+                    }
                 }
             }
+
             // set original pos to pathDistance blocks in the direction the player is facing
             Vec3d offset = (new Vec3d(Math.sin(-mc.player.getYaw() * Math.PI / 180), 0, Math.cos(-mc.player.getYaw() * Math.PI / 180)).normalize()).multiply(pathDistance.get());
             Vec3d targetPos = mc.player.getPos().add(offset);
@@ -357,6 +362,9 @@ public class TrailFollower extends Module
                     if (mc.player != null) {
                         AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
                         if (afkVanillaFly != null) afkVanillaFly.resetYLock();
+                        if (afkVanillaFly.isActive()) {
+                            afkVanillaFly.toggle();
+                        }
                     }
 
             } else if (flightMode.get() == FlightMode.PITCH40) {
