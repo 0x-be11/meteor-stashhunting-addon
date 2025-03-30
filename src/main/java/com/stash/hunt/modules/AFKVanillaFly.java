@@ -84,6 +84,7 @@ public class AFKVanillaFly extends Module {
         tickFlyLogic();
     }
 
+    // got rid of the duplicate logic :p but I still need these two methods
 
     private void tryUseFirework() {
         FindItemResult hotbar = InvUtils.findInHotbar(Items.FIREWORK_ROCKET);
