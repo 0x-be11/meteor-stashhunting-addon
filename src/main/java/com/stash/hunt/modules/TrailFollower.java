@@ -363,7 +363,7 @@ public class TrailFollower extends Module
                 if (flightMode.get() == FlightMode.VANILLA) {
                     AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
                     if (afkVanillaFly != null) {
-                        afkVanillaFly.resetYLock(); // Optional: resets the Y-lock when deactivating TrailFollower
+                        afkVanillaFly.resetYLock();
                         if (afkVanillaFly.isActive()) afkVanillaFly.toggle();
                     }
                 } else if (flightMode.get() == FlightMode.PITCH40) {
