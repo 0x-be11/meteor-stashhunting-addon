@@ -10,6 +10,7 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.WallBannerBlock;
+import net.minecraft.block.BannerBlock;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
@@ -31,7 +32,7 @@ public class VanityESP extends Module {
 
     private final Setting<Boolean> highlightBanners = sgGeneral.add(new BoolSetting.Builder()
         .name("banners")
-        .description("highlights nearby banners.")
+        .description("highlights banners.")
         .defaultValue(true)
         .build()
     );
@@ -45,14 +46,14 @@ public class VanityESP extends Module {
 
     private final Setting<SettingColor> mapOutlineColor = sgColors.add(new ColorSetting.Builder()
         .name("map-outline-color")
-        .description("Outline color for item frames containing maps.")
+        .description("outline color for item frames containing maps.")
         .defaultValue(new SettingColor(255, 255, 0, 255))
         .build()
     );
 
     private final Setting<SettingColor> bannerColor = sgColors.add(new ColorSetting.Builder()
         .name("banner-fill")
-        .description("Fill color for banners.")
+        .description("fill color for banners.")
         .defaultValue(new SettingColor(255, 0, 0, 50))
         .build()
     );
@@ -76,13 +77,14 @@ public class VanityESP extends Module {
             for (ItemFrameEntity frame : mc.world.getEntitiesByClass(ItemFrameEntity.class, mc.player.getBoundingBox().expand(64),
                 e -> e.getHeldItemStack().getItem().getTranslationKey().equals("item.minecraft.filled_map"))) {
 
-                Box box = frame.getBoundingBox();
+
+                Box box = frame.getBoundingBox().expand(0.12, 0.12, 0.0);
                 Color fill = new Color(mapColor.get());
                 Color outline = new Color(mapOutlineColor.get());
                 event.renderer.box(box, fill, outline, ShapeMode.Both, 0);
             }
         }
-
+        // redid shaderbox rendering, 4 wall mount facing directions, 4 standing facing directions
         if (highlightBanners.get()) {
             int radius = 8;
             BlockPos playerPos = mc.player.getBlockPos();
@@ -99,38 +101,63 @@ public class VanityESP extends Module {
                         BlockState state = mc.world.getBlockState(pos);
                         Box box;
 
-                        if (state.contains(WallBannerBlock.FACING)) {
-                            Direction facing = state.get(WallBannerBlock.FACING);
-                            switch (facing) {
-                                case NORTH:
-                                    box = new Box(pos.getX() + 0.05, pos.getY() - 0.95, pos.getZ() + 0.93,
-                                        pos.getX() + 0.95, pos.getY() + 0.85, pos.getZ() + 0.995);
-                                    break;
-                                case SOUTH:
-                                    box = new Box(pos.getX() + 0.05, pos.getY() - 0.95, pos.getZ() + 0.005,
-                                        pos.getX() + 0.95, pos.getY() + 0.85, pos.getZ() + 0.07);
-                                    break;
-                                case WEST:
-                                    box = new Box(pos.getX() + 0.93, pos.getY() - 0.95, pos.getZ() + 0.05,
-                                        pos.getX() + 0.995, pos.getY() + 0.85, pos.getZ() + 0.95);
-                                    break;
-                                case EAST:
-                                    box = new Box(pos.getX() + 0.005, pos.getY() - 0.95, pos.getZ() + 0.05,
-                                        pos.getX() + 0.07, pos.getY() + 0.85, pos.getZ() + 0.95);
-                                    break;
-                                default: continue;
-                            }
-                        } else {
-                            box = new Box(pos.getX() + 0.25, pos.getY(), pos.getZ() + 0.1,
-                                pos.getX() + 0.75, pos.getY() + 1.85, pos.getZ() + 0.9);
-                        }
-
                         Color fill = new Color(bannerColor.get());
                         Color outline = new Color(bannerOutline.get());
-                        event.renderer.box(box, fill, outline, ShapeMode.Both, 0);
+
+                        if (state.contains(WallBannerBlock.FACING)) {
+                            Direction facing = state.get(WallBannerBlock.FACING);
+                            double centerX = pos.getX() + 0.5;
+                            double centerZ = pos.getZ() + 0.5;
+                            double offset = 0.1;
+                            double depth = 0.03;
+                            double width = 0.45;
+                            double y1 = pos.getY() - 0.95;
+                            double y2 = pos.getY() + 0.85;
+
+                            switch (facing) {
+                                case NORTH:
+                                    box = new Box(centerX - width, y1, pos.getZ() + 1 - offset - depth, centerX + width, y2, pos.getZ() + 1 - offset);
+                                    break;
+                                case SOUTH:
+                                    box = new Box(centerX - width, y1, pos.getZ() + offset, centerX + width, y2, pos.getZ() + offset + depth);
+                                    break;
+                                case WEST:
+                                    box = new Box(pos.getX() + 1 - offset - depth, y1, centerZ - width, pos.getX() + 1 - offset, y2, centerZ + width);
+                                    break;
+                                case EAST:
+                                    box = new Box(pos.getX() + offset, y1, centerZ - width, pos.getX() + offset + depth, y2, centerZ + width);
+                                    break;
+                                default:
+                                    continue;
+                            }
+
+                            event.renderer.box(box, fill, outline, ShapeMode.Both, 0);
+                        } else if (state.contains(BannerBlock.ROTATION)) {
+                            int rotation = state.get(BannerBlock.ROTATION);
+                            double centerX = pos.getX() + 0.5;
+                            double centerZ = pos.getZ() + 0.5;
+                            double y1 = pos.getY();
+                            double y2 = pos.getY() + 1.85;
+
+                            if (rotation == 0 || rotation == 8) {
+                                double width = 0.45;
+                                double depth = 0.03;
+                                box = new Box(centerX - width, y1, centerZ - depth, centerX + width, y2, centerZ + depth);
+                            } else if (rotation == 4 || rotation == 12) {
+                                double width = 0.03;
+                                double depth = 0.45;
+                                box = new Box(centerX - width, y1, centerZ - depth, centerX + width, y2, centerZ + depth);
+                            } else {
+                                double size = 0.3;
+                                box = new Box(centerX - size, y1, centerZ - size, centerX + size, y2, centerZ + size);
+                            }
+
+                            event.renderer.box(box, fill, outline, ShapeMode.Both, 0);
+                            }
+                        }
                     }
                 }
             }
         }
     }
-}
+
