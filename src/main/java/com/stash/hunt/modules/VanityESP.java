@@ -77,14 +77,21 @@ public class VanityESP extends Module {
             for (ItemFrameEntity frame : mc.world.getEntitiesByClass(ItemFrameEntity.class, mc.player.getBoundingBox().expand(64),
                 e -> e.getHeldItemStack().getItem().getTranslationKey().equals("item.minecraft.filled_map"))) {
 
+                // fixed mapart on-ground rendering bug
+                Box box;
+                float pitch = frame.getPitch();
+                if (pitch == 90 || pitch == -90) {
+                    box = frame.getBoundingBox().expand(0.12, 0.01, 0.12);
+                } else {
+                    box = frame.getBoundingBox().expand(0.12, 0.12, 0.01);
+                }
 
-                Box box = frame.getBoundingBox().expand(0.12, 0.12, 0.0);
                 Color fill = new Color(mapColor.get());
                 Color outline = new Color(mapOutlineColor.get());
                 event.renderer.box(box, fill, outline, ShapeMode.Both, 0);
             }
         }
-        // redid shaderbox rendering, 4 wall mount facing directions, 4 standing facing directions
+    // redid shaderbox rendering, 4 wall mount facing directions, 4 standing facing directions
         if (highlightBanners.get()) {
             int radius = 8;
             BlockPos playerPos = mc.player.getBlockPos();
