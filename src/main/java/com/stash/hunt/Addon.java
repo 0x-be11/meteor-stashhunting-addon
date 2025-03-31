@@ -41,7 +41,6 @@ public class Addon extends MeteorAddon {
         Modules.get().add(new GrimFastFall());
         Modules.get().add(new GrimAirPlace());
         Modules.get().add(new DiscordNotifs());
-
 //        Modules.get().add(new EndermanItemDetector());
 //        Modules.get().add(new GrimDuraFirework());
 //        Modules.get().add(new PacketTester());
