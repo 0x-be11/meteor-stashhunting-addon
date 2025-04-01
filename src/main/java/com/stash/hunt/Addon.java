@@ -29,7 +29,6 @@ public class Addon extends MeteorAddon {
         Modules.get().add(new GotoPosition());
         Modules.get().add(new ChestIndex());
         Modules.get().add(new HighlightOldLava());
-        Modules.get().add(new AFKBoostFly());
         Modules.get().add(new Pitch40Util());
 //        Modules.get().add(new AutoTrade());
 //        Modules.get().add(new XPBot());
@@ -42,7 +41,7 @@ public class Addon extends MeteorAddon {
 //        Modules.get().add(new EndermanItemDetector());
 //        Modules.get().add(new GrimDuraFirework());
 //        Modules.get().add(new PacketTester());
-
+//
 //        Modules.get().add(new StashMover2());
 //        Modules.get().add(new StashMoverListener());
 
