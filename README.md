@@ -5,9 +5,7 @@
   - Lets you fly with a chestplate on, which means you don't lose durability. An elytra is required in the hotbar.
   - Has a bounce mode with a baritone highway obstacle passer.
   - Bounce in 1x2 tunnels can reach up to 130bps. (Make sure to use ViaFabric 1.20.4 if having issues)
-- AFKBoostFly (Useless on current 2b anticheat)
-  - Makes you look up and down to gain momentum.
-- TrailFollower (Credit to WarriorLost for creating the original TrailFollower this was based off)
+- TrailFollower (Credit to [WarriorLost](https://github.com/warriorlost) for creating the original TrailFollower this was based off)
   - Follows trails in all dimensions using either pitch40 or baritone. May break on path splits or other cases.
 - BetterStashFinder
   - Pretty much the same as meteors stash finder except some extra features:
@@ -22,7 +20,7 @@
   - Used alongside meteors pitch40. Auto sets min and max bounds so that you continue to gain height. Also has an auto firework mode for when you lose velocity.
 - NoJumpDelay
   - Surprisingly most clients don't have this, but why not have it on.
-- GrimAirPlace (Possibly broken)
+- GrimAirPlace
   - Meteor's airplace code but with a grim bypass.
 - GrimFastFall
   - Makes you fall faster than usual, and usually results in no fall damage. You can also do some weird stuff with an elytra to get a little boost.
@@ -37,6 +35,10 @@
   - Looks at the position specified and holds w.
 - HighlightOldLava
   - Highlights lava that is of a certain height. This used to be helpful for tracing paths in the nether but with new pallete newchunks its not really useful.
+- AFKVanillaFly (Made by [xqyet](https://github.com/xqyet))
+  - Keeps you at the same Y value by adjusting your pitch up and down, and uses rockets to keep you moving.
+- VanityESP (Made by [xqyet](https://github.com/xqyet))
+  - Highlights item frames that have mapart in them, and banners.
 
 ## FAQ
 - Q: How do I install this / where is the jar file?
