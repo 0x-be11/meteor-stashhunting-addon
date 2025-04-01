@@ -103,19 +103,18 @@ public class AFKVanillaFly extends Module {
                 }
             } else if (fireworkMode.get() == AutoFireworkMode.VELOCITY) {
                 double horizontalSpeed = Math.sqrt(Math.pow(mc.player.getVelocity().x, 2) + Math.pow(mc.player.getVelocity().z, 2));
-                if (horizontalSpeed < velocityThreshold.get() && System.currentTimeMillis() - lastRocketUse > 1000) {
+                if (horizontalSpeed < velocityThreshold.get()) {
                     tryUseFirework();
                 }
             }
+            //need this for initiate flying check if on ground, will configure in the future (won't affect grim fly since not being used)
         } else {
-
             if (!launched) {
                 mc.player.jump();
                 launched = true;
             } else if (System.currentTimeMillis() - lastRocketUse > 1000) {
                 tryUseFirework();
             }
-
             yTarget = -1;
         }
     }
@@ -150,7 +149,7 @@ public class AFKVanillaFly extends Module {
                 return;
             }
         }
-        Utils.firework(mc, true);
+        Utils.firework(mc, false);
         lastRocketUse = System.currentTimeMillis();
     }
 
