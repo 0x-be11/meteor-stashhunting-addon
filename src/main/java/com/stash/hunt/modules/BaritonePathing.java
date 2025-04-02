@@ -8,6 +8,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.misc.Keybind;
 import meteordevelopment.orbit.EventHandler;
+import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.text.Text;
 
 public class BaritonePathing extends Module {
@@ -50,8 +51,16 @@ public class BaritonePathing extends Module {
 
         if (abortKeybind.get().isPressed()) {
             sendBaritoneCommand("stop");
+
+            // Disable TrailFollower if active
+            Module trailFollower = Modules.get().get("TrailFollower");
+            if (trailFollower != null && trailFollower.isActive()) {
+                trailFollower.toggle();
+            }
         }
     }
+
+
 
     private void sendBaritoneCommand(String command) {
         if (command != null && !command.isEmpty()) {

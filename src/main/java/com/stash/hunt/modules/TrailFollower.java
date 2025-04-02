@@ -473,10 +473,22 @@ public class TrailFollower extends Module
 //                    }
                     //instead of flying to a calculated offset from the player using pathDistanceActual, will directly set the last trail chunk detected
                     baritoneSetGoalTicks = baritoneUpdateTicks.get();
-                    if (!trail.isEmpty()) {
-                        Vec3d lastTrailPoint = trail.getLast();
+                    if (mc.world.getRegistryKey().equals(World.NETHER)) {
+
+                        if (!trail.isEmpty()) {
+                            Vec3d lastTrailPoint = trail.getLast();
+                            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess()
+                                .setGoalAndPath(new GoalXZ((int) lastTrailPoint.x, (int) lastTrailPoint.z));
+                        }
+                    } else {
+                        // use average path for overworld
+                        Vec3d averagePos = calculateAveragePosition(trail);
+                        Vec3d positionVec = averagePos.subtract(mc.player.getPos()).normalize();
+                        Vec3d targetPos = mc.player.getPos().add(positionVec.multiply(pathDistanceActual));
                         BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess()
-                            .setGoalAndPath(new GoalXZ((int) lastTrailPoint.x, (int) lastTrailPoint.z));
+                            .setGoalAndPath(new GoalXZ((int) targetPos.x, (int) targetPos.z));
+
+                        targetYaw = Rotations.getYaw(targetPos); // smooth rotation target
                     }
                     if (autoElytra.get() && BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() == null)
                     {
