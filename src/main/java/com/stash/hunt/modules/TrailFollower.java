@@ -193,6 +193,15 @@ public class TrailFollower extends Module
         .sliderMax(1000 * 60)
         .build()
     );
+    // added trail deviation slider now that baritone is locked to trail pathing
+    public final Setting<Double> maxTrailDeviation = sgAdvanced.add(new DoubleSetting.Builder()
+        .name("Max Trail Deviation")
+        .description("Maximum allowed angle (in degrees) from the original trail direction. Helps avoid switching to intersecting trails.")
+        .defaultValue(180.0)
+        .min(1.0)
+        .sliderMax(270.0)
+        .build()
+    );
 
     public final Setting<Integer> chunkCacheLength = sgAdvanced.add(new IntSetting.Builder()
         .name("Chunk Cache Length")
@@ -462,9 +471,13 @@ public class TrailFollower extends Module
 //                            if (!chunkFound) return;
 //                        }
 //                    }
+                    //instead of flying to a calculated offset from the player using pathDistanceActual, will directly set the last trail chunk detected
                     baritoneSetGoalTicks = baritoneUpdateTicks.get();
-                    Vec3d targetPos = positionInDirection(mc.player.getPos(), targetYaw, pathDistanceActual);
-                    BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalXZ((int) targetPos.x, (int) targetPos.z));
+                    if (!trail.isEmpty()) {
+                        Vec3d lastTrailPoint = trail.getLast();
+                        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess()
+                            .setGoalAndPath(new GoalXZ((int) lastTrailPoint.x, (int) lastTrailPoint.z));
+                    }
                     if (autoElytra.get() && BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() == null)
                     {
                         // TODO: Fix this
@@ -565,15 +578,12 @@ public class TrailFollower extends Module
 
         double chunkAngle = Rotations.getYaw(pos);
         double angleDiff = angleDifference(targetYaw, chunkAngle);
-
-//        if (Math.abs(angleDiff) > 90)
-//        {
-//            return;
-//        }
-
+        // was not able to add this before, but now can successfully filter out most other trails using the most recent chunk for pathing
+        if (followingTrail && Math.abs(angleDiff) > maxTrailDeviation.get())
+        {
+            return;
+        }
         lastFoundTrailTime = System.currentTimeMillis();
-
-        // free up one spot for a new chunk to be added
         while(trail.size() >= maxTrailLength.get())
         {
             trail.pollFirst();
@@ -605,13 +615,11 @@ public class TrailFollower extends Module
         }
 
 
-        // get average pos
-        Vec3d averagePos = calculateAveragePosition(trail);
-
-        Vec3d positionVec = averagePos.subtract(mc.player.getPos()).normalize();
-
-        Vec3d targetPos = mc.player.getPos().add(positionVec.multiply(10));
-        targetYaw = Rotations.getYaw(targetPos);
+        // instead of a calculated average coordinate, will use latest chunk added to trail
+        if (!trail.isEmpty()) {
+            Vec3d lastTrailPoint = trail.getLast(); // get the most recent trail chunk center
+            targetYaw = Rotations.getYaw(lastTrailPoint);
+        }
     }
 
     private boolean isValidChunk(ChunkPos chunkPos, RegistryKey<World> currentDimension)
@@ -641,6 +649,7 @@ public class TrailFollower extends Module
         return isHighlighted && (!is119NewChunk || is112OldChunk);
     }
 
+    // not using this method now but will keep it in case
     private Vec3d calculateAveragePosition(ArrayDeque<Vec3d> positions)
     {
         double sumX = 0, sumZ = 0;
