@@ -15,7 +15,7 @@ public class BaritonePathing extends Module {
     private final SettingGroup sgSettings = settings.getDefaultGroup();
 
     private final Setting<Keybind> flyKeybind = sgSettings.add(new KeybindSetting.Builder()
-        .name("PathMacro")
+        .name("Baritone Path Macro")
         .description("Sends #thisway <distance> and #elytra.")
         .defaultValue(Keybind.none())
         .build()
@@ -24,7 +24,7 @@ public class BaritonePathing extends Module {
     private final Setting<Integer> distance = sgSettings.add(new IntSetting.Builder()
         .name("Distance")
         .description("The distance to fly using Baritone Elytra.")
-        .defaultValue(1000)
+        .defaultValue(500)
         .min(1)
         .sliderMax(10000)
         .build()
@@ -38,9 +38,11 @@ public class BaritonePathing extends Module {
     );
 
     public BaritonePathing() {
-        super(Addon.CATEGORY, "BaritonePathing", "Macro for Baritone Elytra pathing. Enables TrailFollower. Use in air.");
+        super(Addon.CATEGORY, "BaritonePathMacro", "Easy macro to activate TrailFollower in the nether. Must deploy in air.");
         BaritoneAPI.getSettings().logger.value = (s) -> {};  // No-op logger
     }
+
+    private boolean trailFollowerWasActive = false;
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
@@ -52,10 +54,14 @@ public class BaritonePathing extends Module {
         if (abortKeybind.get().isPressed()) {
             sendBaritoneCommand("stop");
 
-            // Disable TrailFollower if active
             Module trailFollower = Modules.get().get("TrailFollower");
-            if (trailFollower != null && trailFollower.isActive()) {
-                trailFollower.toggle();
+            if (trailFollower != null) {
+                boolean currentlyActive = trailFollower.isActive();
+                if (trailFollowerWasActive && !currentlyActive) {
+                    sendBaritoneCommand("stop");
+                    info("TrailFollower was disabled. Aborting Baritone Elytra path.");
+                }
+                trailFollowerWasActive = currentlyActive;
             }
         }
     }
@@ -73,7 +79,6 @@ public class BaritonePathing extends Module {
         Text text = event.getMessage();
         String msg = text.getString();
 
-        // Suppress Baritone messages
         if (msg.contains("[Baritone] Goal:") || msg.contains("ok canceled")) {
             event.setCancelled(true);
         }

@@ -482,11 +482,8 @@ public class TrailFollower extends Module
                         }
                     } else {
                         // use average path for overworld
-                        Vec3d averagePos = calculateAveragePosition(trail);
-                        Vec3d positionVec = averagePos.subtract(mc.player.getPos()).normalize();
-                        Vec3d targetPos = mc.player.getPos().add(positionVec.multiply(pathDistanceActual));
-                        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess()
-                            .setGoalAndPath(new GoalXZ((int) targetPos.x, (int) targetPos.z));
+                        Vec3d targetPos = positionInDirection(mc.player.getPos(), targetYaw, pathDistanceActual);
+                        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalXZ((int) targetPos.x, (int) targetPos.z));
 
                         targetYaw = Rotations.getYaw(targetPos); // smooth rotation target
                     }
@@ -628,9 +625,17 @@ public class TrailFollower extends Module
 
 
         // instead of a calculated average coordinate, will use latest chunk added to trail
+        // *fix for overworld smoothing
         if (!trail.isEmpty()) {
-            Vec3d lastTrailPoint = trail.getLast(); // get the most recent trail chunk center
-            targetYaw = Rotations.getYaw(lastTrailPoint);
+            if (followMode == FollowMode.YAWLOCK) {
+                Vec3d averagePos = calculateAveragePosition(trail);
+                Vec3d positionVec = averagePos.subtract(mc.player.getPos()).normalize();
+                Vec3d targetPos = mc.player.getPos().add(positionVec.multiply(10));
+                targetYaw = Rotations.getYaw(targetPos);
+            } else {
+                Vec3d lastTrailPoint = trail.getLast();
+                targetYaw = Rotations.getYaw(lastTrailPoint);
+            }
         }
     }
 
