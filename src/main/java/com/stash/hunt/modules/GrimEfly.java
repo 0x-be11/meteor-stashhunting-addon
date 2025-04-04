@@ -170,7 +170,7 @@ public class GrimEfly extends Module {
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
-        if (mc.player == null) return;
+        if (mc.player == null || mc.player.getAbilities().allowFlying) return;
 
         mc.player.setSprinting(true);
         if (bounce.get())
