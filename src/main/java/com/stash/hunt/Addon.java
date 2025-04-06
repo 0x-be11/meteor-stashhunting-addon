@@ -43,7 +43,7 @@ public class Addon extends MeteorAddon {
 //        Modules.get().add(new EndermanItemDetector());
 //        Modules.get().add(new GrimDuraFirework());
 //        Modules.get().add(new PacketTester());
-//
+
 //        Modules.get().add(new StashMover2());
 //        Modules.get().add(new StashMoverListener());
 
@@ -63,8 +63,12 @@ public class Addon extends MeteorAddon {
             if (baritoneLoaded)
             {
                 Modules.get().add(new TrailFollower());
-                Modules.get().add(new GrimEfly());
             }
+        }
+
+        if (baritoneLoaded)
+        {
+            Modules.get().add(new GrimEfly());
         }
 
         Hud.get().register(Weather.INFO);
