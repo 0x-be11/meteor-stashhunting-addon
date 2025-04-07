@@ -55,13 +55,11 @@ public class BaritonePathing extends Module {
             sendBaritoneCommand("stop");
 
             Module trailFollower = Modules.get().get("TrailFollower");
-            if (trailFollower != null) {
-                boolean currentlyActive = trailFollower.isActive();
-                if (trailFollowerWasActive && !currentlyActive) {
-                    sendBaritoneCommand("stop");
-                    info("TrailFollower was disabled. Aborting Baritone Elytra path.");
-                }
-                trailFollowerWasActive = currentlyActive;
+            if (trailFollower != null && trailFollower.isActive()) {
+                trailFollower.toggle();  // Disable TrailFollower
+                info("Aborted Baritone Elytra fly and disabled TrailFollower.");
+            } else {
+                info("Aborted Baritone Elytra fly.");
             }
         }
     }

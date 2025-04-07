@@ -86,10 +86,22 @@ public class TrailFollower extends Module
         PITCH40
     }
 
+    public enum NetherPathMode {
+        AVERAGE,
+        CHUNK
+    }
+
     public final Setting<FlightMode> flightMode = sgGeneral.add(new EnumSetting.Builder<FlightMode>()
-        .name("Flight Mode")
-        .description("Choose how TrailFollower flies.")
+        .name("Overworld Flight Mode")
+        .description("Choose how TrailFollower flies in Overworld.")
         .defaultValue(FlightMode.PITCH40)
+        .build()
+    );
+
+    public final Setting<NetherPathMode> netherPathMode = sgGeneral.add(new EnumSetting.Builder<NetherPathMode>()
+        .name("Nether Path Mode")
+        .description("Choose how TrailFollower does baritone pathing in Nether.")
+        .defaultValue(NetherPathMode.CHUNK)
         .build()
     );
 
@@ -310,7 +322,7 @@ public class TrailFollower extends Module
                 }
 
             }
-        // ***this block replaced the old pitch40 boolean toggle and is now controlled through the flightMode enum. swapped the pitch40.get() check (from the old boolsetting) for an enumsetting check (flightMode)
+            // ***this block replaced the old pitch40 boolean toggle and is now controlled through the flightMode enum. swapped the pitch40.get() check (from the old boolsetting) for an enumsetting check (flightMode)
             if (followMode == FollowMode.YAWLOCK) {
                 if (flightMode.get() == FlightMode.PITCH40) {
                     Class<? extends Module> pitch40Util = Pitch40Util.class;
@@ -476,9 +488,20 @@ public class TrailFollower extends Module
                     if (mc.world.getRegistryKey().equals(World.NETHER)) {
 
                         if (!trail.isEmpty()) {
-                            Vec3d lastTrailPoint = trail.getLast();
+                            Vec3d baritoneTarget;
+                            if (netherPathMode.get() == NetherPathMode.AVERAGE) {
+                                Vec3d averagePos = calculateAveragePosition(trail);
+                                Vec3d directionVec = averagePos.subtract(mc.player.getPos()).normalize();
+                                Vec3d predictedPos = mc.player.getPos().add(directionVec.multiply(10));
+                                targetYaw = Rotations.getYaw(predictedPos);
+                                baritoneTarget = positionInDirection(mc.player.getPos(), targetYaw, pathDistanceActual);
+                            } else {
+                                Vec3d lastPos = trail.getLast();
+                                baritoneTarget = lastPos;
+                            }
+
                             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess()
-                                .setGoalAndPath(new GoalXZ((int) lastTrailPoint.x, (int) lastTrailPoint.z));
+                                .setGoalAndPath(new GoalXZ((int) baritoneTarget.x, (int) baritoneTarget.z));
                         }
                     } else {
                         // use average path for overworld
@@ -487,7 +510,7 @@ public class TrailFollower extends Module
 
                         targetYaw = Rotations.getYaw(targetPos); // smooth rotation target
                     }
-                    if (autoElytra.get() && BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() == null)
+                    if (autoElytra.get() && (BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() == null))
                     {
                         // TODO: Fix this
                         log("The auto elytra mode is broken right now. If it's not working just turn it off and manually use #elytra to start.");
