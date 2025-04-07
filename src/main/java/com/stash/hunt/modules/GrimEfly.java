@@ -196,7 +196,7 @@ public class GrimEfly extends Module {
                 return;
             }
             // Length check to fix weird issue where goal gets set to 0 0 when going through queue, even though it gets reset. Likely due to bad connection.
-            if (highwayObstaclePasser.get() && mc.player.getPos().length() < 100 && (mc.player.getY() < targetY.get()
+            if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && (mc.player.getY() < targetY.get()
                 || mc.player.getY() > targetY.get() + 2
                 || mc.player.horizontalCollision))
             {
