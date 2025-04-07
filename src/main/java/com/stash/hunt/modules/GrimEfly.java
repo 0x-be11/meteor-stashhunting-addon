@@ -143,7 +143,6 @@ public class GrimEfly extends Module {
 
         if (bounce.get())
         {
-            info("Goal reset!");
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
         }
     }
@@ -183,8 +182,6 @@ public class GrimEfly extends Module {
             }
             else if (tempPath != null)
             {
-                info("Setting temp path to " + tempPath);
-                info("Current position is " + mc.player.getPos());
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(tempPath));
                 return;
             }
@@ -200,7 +197,6 @@ public class GrimEfly extends Module {
                 || mc.player.getY() > targetY.get() + 2
                 || mc.player.horizontalCollision))
             {
-                info("This shouldnt be at 0 0: " + mc.player.getPos());
                 paused.set(true);
                 double targetYaw = lockYaw.get() ? yaw.get() : mc.player.getYaw();
                 Vec3d pos;
@@ -217,7 +213,6 @@ public class GrimEfly extends Module {
                     if (assumeHighwayDirs.get())
                     {
                         Vec3d playerPos = normalizedPositionOnAxis(mc.player.getPos()).multiply(mc.player.getPos().multiply(1,0,1).length());
-                        info("Player pos: " + playerPos);
                         pos = positionInDirection(playerPos, targetYaw, currDistance);
                     }
                     else
@@ -225,7 +220,6 @@ public class GrimEfly extends Module {
                         // TODO: Make this better
                         pos = positionInDirection(mc.player.getPos(), targetYaw, currDistance);
                     }
-                    info("Goal set to " + goal);
                     goal = new BlockPos((int)pos.x + baritoneOffset.get().getX(), targetY.get() + baritoneOffset.get().getY(), (int)pos.z + baritoneOffset.get().getZ());
                     currDistance++;
                 }
