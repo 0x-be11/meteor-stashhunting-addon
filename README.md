@@ -39,6 +39,8 @@
   - Keeps you at the same Y value by adjusting your pitch up and down, and uses rockets to keep you moving.
 - VanityESP (Made by [xqyet](https://github.com/xqyet))
   - Highlights item frames that have mapart in them, and banners.
+- AutoPortal (Made by [xqyet](https://github.com/xqyet))
+  - Automatically places and lights a portal.
 
 ## FAQ
 - Q: How do I install this / where is the jar file?
