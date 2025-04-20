@@ -218,6 +218,7 @@ public class GrimEfly extends Module {
                     else
                     {
                         // TODO: Make this better
+                        // Bug where currDistance always maxes out when on 1x2s next to highway
                         pos = positionInDirection(mc.player.getPos(), targetYaw, currDistance);
                     }
                     goal = new BlockPos((int)pos.x + baritoneOffset.get().getX(), targetY.get() + baritoneOffset.get().getY(), (int)pos.z + baritoneOffset.get().getZ());
@@ -265,8 +266,6 @@ public class GrimEfly extends Module {
         sendStartFlyingPacket();
 
         swapToItem(itemResult.slot());
-        // send packet
-        mc.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(mc.player.currentScreenHandler.syncId));
     }
 
     Vec3d normalizedPositionOnAxis(Vec3d pos) {
@@ -350,18 +349,5 @@ public class GrimEfly extends Module {
             new ItemStack(Items.AIR), // clickedItem
             changedSlots
         ));
-
-        // Also forcibly set local inventory so we "see" it right away
-        // The changedSlots map has the final item arrangement
-//        changedSlots.forEach((slotId, stack) -> {
-//            if (slotId == 6) {
-//                mc.player.getInventory().setStack(6, stack.copy());
-//            }
-//            else if (slotId == 36) {
-//                // local index 0 => hotbar
-//                mc.player.getInventory().setStack(0, stack.copy());
-//            }
-//            // If you had more variations, you'd match them here
-//        });
     }
 }
