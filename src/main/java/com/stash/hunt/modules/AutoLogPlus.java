@@ -49,6 +49,23 @@ public class AutoLogPlus extends Module
         .build()
     );
 
+    private final Setting<Boolean> logPortal = sgGeneral.add(new BoolSetting.Builder()
+        .name("Log on Portal")
+        .description("Logs out if you are in a portal for too long.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Integer> portalTicks = sgGeneral.add(new IntSetting.Builder()
+        .name("Portal Ticks")
+        .description("The amount of ticks in a portal before you get kicked (It takes 80 ticks to go through a portal).")
+        .defaultValue(30)
+        .min(1)
+        .sliderMax(70)
+        .visible(logPortal::get)
+        .build()
+    );
+
     private final Setting<Boolean> logPosition = sgGeneral.add(new BoolSetting.Builder()
         .name("Log Position")
         .description("Logs out if you are within x blocks of this position. Y Position is not included")
@@ -85,11 +102,36 @@ public class AutoLogPlus extends Module
         super(Addon.CATEGORY, "auto-log-plus", "Provides some additional triggers to log out.");
     }
 
+    @Override
+    public void onActivate() {
+        currPortalTicks = 0;
+    }
+
+    private int currPortalTicks = 0;
+
     @EventHandler
     private void onTick(TickEvent.Post event)
     {
         // If in the 2b2t queue
         if (mc.player == null || mc.player.getAbilities().allowFlying) return;
+
+        if (logPortal.get() && mc.player.portalManager != null)
+        {
+            if (mc.player.portalManager.isInPortal())
+            {
+                currPortalTicks++;
+                if (currPortalTicks > portalTicks.get())
+                {
+                    logOut("Player was in a portal for " + currPortalTicks + " ticks.");
+                    return;
+                }
+            }
+            else
+            {
+                currPortalTicks = 0;
+            }
+        }
+
         if (logOnY.get() && mc.player.getY() < yLevel.get())
         {
             logOut("Player was at Y=" + mc.player.getY() + " which is below your limit of Y=" + yLevel.get());
