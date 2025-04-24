@@ -77,10 +77,44 @@ public class Utils
         return airCount;
     }
 
+    /**
+     * Returns the position in the direction of the yaw.
+     * @param pos The starting position.
+     * @param yaw The yaw in degrees.
+     * @param distance The distance to move in the direction of the yaw.
+     * @return The new position.
+     */
     public static Vec3d positionInDirection(Vec3d pos, double yaw, double distance)
     {
-        Vec3d offset = (new Vec3d(Math.sin(-yaw * Math.PI / 180), 0, Math.cos(-yaw * Math.PI / 180)).normalize()).multiply(distance);
+        Vec3d offset = yawToDirection(yaw).multiply(distance);
         return pos.add(offset);
+    }
+
+    /**
+     * Converts a yaw in degrees to a direction vector.
+     * @param yaw The yaw in degrees.
+     * @return The direction vector.
+     */
+    public static Vec3d yawToDirection(double yaw)
+    {
+        yaw = yaw * Math.PI / 180;
+        double x = -Math.sin(yaw);
+        double z = Math.cos(yaw);
+        return new Vec3d(x, 0, z);
+    }
+
+    /**
+     * Returns the distance from a point to a direction vector, not including the Y axis.
+     * @param point The point to measure from.
+     * @param direction The direction vector.
+     * @return The distance from the point to the direction vector.
+     */
+    public static double distancePointToDirection(Vec3d point, Vec3d direction) {
+        point = point.multiply(new Vec3d(1, 0, 1));
+        double projectionLength = point.dotProduct(direction);
+        Vec3d projection = direction.multiply(projectionLength);
+        Vec3d perp = point.subtract(projection);
+        return perp.length();
     }
 
     public static int totalInvCount(MinecraftClient mc, Item item) {
