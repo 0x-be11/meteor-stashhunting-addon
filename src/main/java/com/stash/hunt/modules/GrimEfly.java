@@ -2,35 +2,32 @@ package com.stash.hunt.modules;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.GoalBlock;
-import meteordevelopment.meteorclient.events.entity.player.InteractItemEvent;
+import meteordevelopment.meteorclient.events.world.ChunkDataEvent;
 import meteordevelopment.meteorclient.events.world.PlaySoundEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.systems.modules.player.ChestSwap;
 import meteordevelopment.meteorclient.utils.Utils;
-import meteordevelopment.meteorclient.utils.misc.input.Input;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.FireworkRocketItem;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import com.stash.hunt.Addon;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.List;
@@ -40,6 +37,8 @@ import static com.stash.hunt.Utils.*;
 public class GrimEfly extends Module {
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
+
+    // TODO: Add setting to auto equip chestplate / hotbar elytra to prevent it breaking on reconnects
 
     private final Setting<Boolean> bounce = sgGeneral.add(new BoolSetting.Builder()
         .name("Bounce")
@@ -112,11 +111,46 @@ public class GrimEfly extends Module {
         .build()
     );
 
+    private final Setting<Boolean> avoidPortalTraps = sgGeneral.add(new BoolSetting.Builder()
+        .name("Avoid Portal Traps")
+        .description("Will attempt to detect portal traps on chunk load and avoid them.")
+        .defaultValue(false)
+        .visible(() -> bounce.get() && highwayObstaclePasser.get())
+        .build()
+    );
+
+    private final Setting<Double> portalAvoidDistance = sgGeneral.add(new DoubleSetting.Builder()
+        .name("Portal Avoid Distance")
+        .description("The distance to a portal trap where the obstacle passer will takeover and go around it.")
+        .defaultValue(20)
+        .min(0)
+        .sliderMax(50)
+        .visible(() -> bounce.get() && highwayObstaclePasser.get() && avoidPortalTraps.get())
+        .build()
+    );
+
+    private final Setting<Integer> portalScanWidth = sgGeneral.add(new IntSetting.Builder()
+        .name("Portal Scan Width")
+        .description("The width on the axis of the highway that will be scanned for portal traps.")
+        .defaultValue(5)
+        .min(3)
+        .sliderMax(10)
+        .visible(() -> bounce.get() && highwayObstaclePasser.get() && avoidPortalTraps.get())
+        .build()
+    );
+
     private final Setting<BlockPos> baritoneOffset = sgGeneral.add(new BlockPosSetting.Builder()
         .name("Baritone Offset")
         .description("The offset in blocks from where goals should be set.")
         .defaultValue(new BlockPos(0,0,0))
         .visible(() -> bounce.get() && highwayObstaclePasser.get())
+        .build()
+    );
+
+    private final Setting<Boolean> autoEquipChestplate = sgGeneral.add(new BoolSetting.Builder()
+        .name("Auto Equip Chestplate")
+        .description("Equips a chestplate on activation. Fixes a bug on reconnect where you join wearing an elytra.")
+        .defaultValue(false)
         .build()
     );
 
@@ -137,6 +171,7 @@ public class GrimEfly extends Module {
     }
 
     private boolean startSprinting;
+    private BlockPos portalTrap = null;
 
     @Override
     public void onActivate()
@@ -145,10 +180,18 @@ public class GrimEfly extends Module {
         startSprinting = mc.player.isSprinting();
         paused.set(false);
         tempPath = null;
-
+        portalTrap = null;
         if (bounce.get())
         {
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
+        }
+
+        if (autoEquipChestplate.get())
+        {
+            if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() == Items.ELYTRA) {
+                info("Swapping");
+                Modules.get().get(ChestSwap.class).swap();
+            }
         }
     }
 
@@ -200,13 +243,22 @@ public class GrimEfly extends Module {
             // Length check to fix weird issue where goal gets set to 0 0 when going through queue, even though it gets reset. Likely due to bad connection.
             if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && (mc.player.getY() < targetY.get()
                 || mc.player.getY() > targetY.get() + 2
-                || mc.player.horizontalCollision))
+                || mc.player.horizontalCollision)
+                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get())
             {
                 paused.set(true);
                 double targetYaw = lockYaw.get() ? yaw.get() : mc.player.getYaw();
                 Vec3d pos;
                 BlockPos goal = mc.player.getBlockPos();
                 double currDistance = distance.get(); // Keep checking farther distances until a goal is found that has a block beneath it
+
+                BlockPos startPos = mc.player.getBlockPos(); // The start pos is what we start looking for a valid position from
+                if (portalTrap != null) {
+                    startPos = portalTrap;
+                    portalTrap = null;
+                    info("Pathing around portal.");
+                }
+
                 do
                 {
                     if (currDistance > maxDistance)
@@ -217,14 +269,14 @@ public class GrimEfly extends Module {
                     }
                     if (assumeHighwayDirs.get())
                     {
-                        Vec3d playerPos = normalizedPositionOnAxis(mc.player.getPos()).multiply(mc.player.getPos().multiply(1,0,1).length());
+                        Vec3d playerPos = normalizedPositionOnAxis(startPos.toCenterPos()).multiply(startPos.toCenterPos().multiply(1,0,1).length());
                         pos = positionInDirection(playerPos, targetYaw, currDistance);
                     }
                     else
                     {
                         // TODO: Make this better
                         // Bug where currDistance always maxes out when on 1x2s next to highway
-                        pos = positionInDirection(mc.player.getPos(), targetYaw, currDistance);
+                        pos = positionInDirection(startPos.toCenterPos(), targetYaw, currDistance);
                     }
                     goal = new BlockPos((int)pos.x + baritoneOffset.get().getX(), targetY.get() + baritoneOffset.get().getY(), (int)pos.z + baritoneOffset.get().getZ());
                     currDistance++;
@@ -258,6 +310,54 @@ public class GrimEfly extends Module {
         {
             doGrimEflyStuff();
 
+        }
+    }
+
+
+
+    @EventHandler
+    private void onChunkData(ChunkDataEvent event)
+    {
+        if (!avoidPortalTraps.get()) return;
+        ChunkPos pos = event.chunk().getPos();
+
+        BlockPos centerPos = pos.getCenterAtY(targetY.get());
+
+        // Check if chunk is on the players path
+        Vec3d moveDir = yawToDirection(yaw.get());
+        double distanceToHighway = distancePointToDirection(Vec3d.of(centerPos), moveDir);
+
+        if (distanceToHighway > 21) return;
+
+        for (int x = 0; x < 16; x++)
+        {
+            for (int z = 0; z < 16; z++)
+            {
+                for (int y = targetY.get(); y < targetY.get() + 3; y++)
+                {
+                    BlockPos position = new BlockPos(pos.x * 16 + x, y, pos.z * 16 + z);
+
+                    if (distancePointToDirection(Vec3d.of(position), moveDir) > portalScanWidth.get()) continue;
+
+                    if (mc.world.getBlockState(position).getBlock().equals(Blocks.NETHER_PORTAL)) // TODO: This position could be unloaded
+                    {
+                        BlockPos posBehind = new BlockPos((int)Math.floor(position.getX() + moveDir.x), position.getY(), (int) Math.floor(position.getZ() + moveDir.z));
+
+                        // Trap is detected when a portal has a solid block or another portal behind it
+                        if (mc.world.getBlockState(posBehind).isSolidBlock(mc.world, posBehind) ||
+                            mc.world.getBlockState(posBehind).getBlock() == Blocks.NETHER_PORTAL)
+                        {
+                            if (portalTrap == null || (
+                                portalTrap.getSquaredDistance(posBehind) > 100 &&
+                                mc.player.getBlockPos().getSquaredDistance(posBehind) < mc.player.getBlockPos().getSquaredDistance(portalTrap))
+                            )
+                            {
+                                portalTrap = posBehind;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -307,19 +407,6 @@ public class GrimEfly extends Module {
         }
     }
 
-//    private void debugInventoryState() {
-//        if (mc.player == null || mc.player.getInventory() == null) return;
-//
-//        ChatUtils.info("Debugging inventory state...");
-//        for (int i = 0; i < mc.player.getInventory().size(); i++) {
-//            ItemStack stack = mc.player.getInventory().getStack(i);
-//            String itemName = stack.isEmpty() ? "Empty" : stack.getItem().getName().getString();
-//            int count = stack.isEmpty() ? 0 : stack.getCount();
-//            ChatUtils.info(String.format("Slot %d: %s x%d", i, itemName, count));
-//        }
-//        ChatUtils.info("Finished debugging inventory state.");
-//    }
-
     // 38 is the meteor mapping for chestplate
     // serverside uses default mappings: https://imgs.search.brave.com/cyvAxjIhLweeF1qeRXpC_8ESRlImhUmMGWbV_n2to_A/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jNGsz/LmdpdGh1Yi5pby93/aWtpLnZnL2ltYWdl/cy8xLzEzL0ludmVu/dG9yeS1zbG90cy5w/bmc
     private void swapToItem(int slot) {
@@ -353,7 +440,7 @@ public class GrimEfly extends Module {
             syncId,
             stateId,
             6,                 // slotNum
-            buttonNum,                 // buttonNum: the slot number thats being swapped //TODO: Try numbers 9-39, might be possible to do it without needing in hotbar
+            buttonNum,                 // buttonNum: the slot number thats being swapped
             SlotActionType.SWAP,
             new ItemStack(Items.AIR), // clickedItem
             changedSlots
