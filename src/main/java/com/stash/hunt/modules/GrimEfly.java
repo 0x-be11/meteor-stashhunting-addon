@@ -325,7 +325,7 @@ public class GrimEfly extends Module {
 
         // Check if chunk is on the players path
         Vec3d moveDir = yawToDirection(yaw.get());
-        double distanceToHighway = distancePointToDirection(Vec3d.of(centerPos), moveDir);
+        double distanceToHighway = distancePointToDirection(Vec3d.of(centerPos), moveDir, mc.player.getPos());
 
         if (distanceToHighway > 21) return;
 
@@ -337,7 +337,7 @@ public class GrimEfly extends Module {
                 {
                     BlockPos position = new BlockPos(pos.x * 16 + x, y, pos.z * 16 + z);
 
-                    if (distancePointToDirection(Vec3d.of(position), moveDir) > portalScanWidth.get()) continue;
+                    if (distancePointToDirection(Vec3d.of(position), moveDir, mc.player.getPos()) > portalScanWidth.get()) continue;
 
                     if (mc.world.getBlockState(position).getBlock().equals(Blocks.NETHER_PORTAL)) // TODO: This position could be unloaded
                     {
