@@ -11,6 +11,7 @@ import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.Nullable;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.OutputStream;
@@ -107,13 +108,21 @@ public class Utils
      * Returns the distance from a point to a direction vector, not including the Y axis.
      * @param point The point to measure from.
      * @param direction The direction vector.
+     * @param start The starting point of the direction vector, or null if the direction vector starts at (0, 0).
      * @return The distance from the point to the direction vector.
      */
-    public static double distancePointToDirection(Vec3d point, Vec3d direction) {
+    public static double distancePointToDirection(Vec3d point, Vec3d direction, @Nullable Vec3d start) {
+        if (start == null) start = Vec3d.ZERO;
+
         point = point.multiply(new Vec3d(1, 0, 1));
-        double projectionLength = point.dotProduct(direction);
+        start = start.multiply(new Vec3d(1, 0, 1));
+        direction = direction.multiply(new Vec3d(1, 0, 1));
+
+        Vec3d directionVec = point.subtract(start);
+
+        double projectionLength = directionVec.dotProduct(direction) / direction.lengthSquared();
         Vec3d projection = direction.multiply(projectionLength);
-        Vec3d perp = point.subtract(projection);
+        Vec3d perp = directionVec.subtract(projection);
         return perp.length();
     }
 

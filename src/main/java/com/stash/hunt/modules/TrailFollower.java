@@ -101,7 +101,7 @@ public class TrailFollower extends Module
     public final Setting<NetherPathMode> netherPathMode = sgGeneral.add(new EnumSetting.Builder<NetherPathMode>()
         .name("Nether Path Mode")
         .description("Choose how TrailFollower does baritone pathing in Nether.")
-        .defaultValue(NetherPathMode.CHUNK)
+        .defaultValue(NetherPathMode.AVERAGE)
         .build()
     );
 
@@ -377,10 +377,7 @@ public class TrailFollower extends Module
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("cancel");
                 break;
             }
-            // updated conditional in this code block
             case YAWLOCK: {
-                mc.player.setYaw(smoothRotation(getActualYaw(mc.player.getYaw()), targetYaw));
-
                 if (flightMode.get() == FlightMode.VANILLA) {
                     AFKVanillaFly afkVanillaFly = Modules.get().get(AFKVanillaFly.class);
                     if (afkVanillaFly != null) {
