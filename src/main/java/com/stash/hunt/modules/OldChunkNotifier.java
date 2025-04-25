@@ -17,6 +17,8 @@ import xaeroplus.module.impl.OldChunks;
 import xaeroplus.module.impl.PaletteNewChunks;
 import xaero.common.minimap.waypoints.Waypoint;
 
+import java.util.ArrayDeque;
+
 import static com.stash.hunt.Utils.*;
 
 
@@ -96,6 +98,7 @@ public class OldChunkNotifier extends Module {
     public void onActivate()
     {
         XaeroPlus.EVENT_BUS.register(this);
+        oldChunks.clear();
     }
 
     @Override
@@ -104,6 +107,9 @@ public class OldChunkNotifier extends Module {
         XaeroPlus.EVENT_BUS.unregister(this);
     }
 
+    // Prevent the same chunk being sent multiple times.
+    private final ArrayDeque<ChunkPos> oldChunks = new ArrayDeque<>();
+
     @net.lenni0451.lambdaevents.EventHandler(priority = -1)
     public void onChunkData(ChunkDataEvent event)
     {
@@ -111,6 +117,13 @@ public class OldChunkNotifier extends Module {
 
         // avoid 2b2t end loading screen
         if (mc.player.getAbilities().allowFlying) return;
+
+        if (oldChunks.size() > 1000) {
+            oldChunks.removeFirst();
+        }
+
+        if (oldChunks.contains(event.chunk().getPos())) return;
+        oldChunks.add(event.chunk().getPos());
 
         boolean is119NewChunk = ModuleManager.getModule(PaletteNewChunks.class)
             .isNewChunk(
