@@ -164,7 +164,7 @@ public class HighlightOldLava extends Module
 
             File loadedChunksFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "loadedChunks.json");
             FileReader reader2 = new FileReader(loadedChunksFile);
-            oldLava = GSON.fromJson(reader, new TypeToken<HashSet<Vec3d>>(){}.getType());
+            oldLava = GSON.fromJson(reader2, new TypeToken<HashSet<Vec3d>>(){}.getType());
             reader2.close();
         } catch (Exception ignored) {
 
