@@ -2,6 +2,7 @@ package com.stash.hunt.modules;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.GoalBlock;
+import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.world.ChunkDataEvent;
 import meteordevelopment.meteorclient.events.world.PlaySoundEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -12,6 +13,7 @@ import meteordevelopment.meteorclient.systems.modules.player.ChestSwap;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.world.TickRate;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
@@ -185,14 +187,7 @@ public class GrimEfly extends Module {
         {
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
         }
-
-        if (autoEquipChestplate.get())
-        {
-            if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() == Items.ELYTRA) {
-                info("Swapping");
-                Modules.get().get(ChestSwap.class).swap();
-            }
-        }
+        chestplateEquipped = false;
     }
 
     @Override
@@ -215,10 +210,23 @@ public class GrimEfly extends Module {
     // it will instead path to this and then when it gets close it will look for a valid block again
     private BlockPos tempPath = null;
 
+    private boolean chestplateEquipped = false;
+
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
         if (mc.player == null || mc.player.getAbilities().allowFlying) return;
+        if (autoEquipChestplate.get() && !chestplateEquipped)
+        {
+            if (!mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("chestplate")) {
+                Modules.get().get(ChestSwap.class).swap();
+                return;
+            }
+            else
+            {
+                chestplateEquipped = true;
+            }
+        }
 
         mc.player.setSprinting(true);
         if (bounce.get())
@@ -361,8 +369,10 @@ public class GrimEfly extends Module {
         }
     }
 
+
     private void doGrimEflyStuff()
     {
+
         FindItemResult itemResult = InvUtils.findInHotbar(Items.ELYTRA);
         if (!itemResult.found()) return;
 
