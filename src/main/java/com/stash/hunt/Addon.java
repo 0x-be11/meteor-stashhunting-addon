@@ -36,7 +36,6 @@ public class Addon extends MeteorAddon {
 //        Modules.get().add(new AutoTrade());
 //        Modules.get().add(new XPBot());
 //        Modules.get().add(new UnknownAccountNotifier());
-        Modules.get().add(new AutoPortal());
 
         Modules.get().add(new NoJumpDelay());
         Modules.get().add(new GrimFastFall());
@@ -48,6 +47,8 @@ public class Addon extends MeteorAddon {
 
 //        Modules.get().add(new StashMover2());
 //        Modules.get().add(new StashMoverListener());
+//        Modules.get().add(new PacketGrimFly());
+        Modules.get().add(new AutoEXPPlus());
 
         boolean baritoneLoaded = checkModLoaded("baritone", "baritone-meteor");
         boolean xaeroWorldMapLoaded = checkModLoaded("xaeroworldmap");
@@ -56,7 +57,7 @@ public class Addon extends MeteorAddon {
 
         if (xaeroWorldMapLoaded && xaeroPlusLoaded)
         {
-//            Modules.get().add(new MudCracker());
+            Modules.get().add(new MudCracker());
             if (xaeroMinimapLoaded)
             {
                 Modules.get().add(new BetterStashFinder());
