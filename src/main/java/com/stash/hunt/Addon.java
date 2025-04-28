@@ -57,7 +57,7 @@ public class Addon extends MeteorAddon {
 
         if (xaeroWorldMapLoaded && xaeroPlusLoaded)
         {
-            Modules.get().add(new MudCracker());
+//            Modules.get().add(new MudCracker());
             if (xaeroMinimapLoaded)
             {
                 Modules.get().add(new BetterStashFinder());
