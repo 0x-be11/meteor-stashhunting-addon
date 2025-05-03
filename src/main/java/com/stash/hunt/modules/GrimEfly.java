@@ -94,6 +94,15 @@ public class GrimEfly extends Module {
         .build()
     );
 
+    private final Setting<Integer> jumpDelay = sgGeneral.add(new IntSetting.Builder()
+        .name("Jump Delay")
+        .description("The delay between jumps in ticks. Useful for controlling speed in 1x2 tunnels.")
+        .defaultValue(0)
+        .min(0)
+        .sliderMax(10)
+        .build()
+    );
+
     private final Setting<Boolean> highwayObstaclePasser = sgObstaclePasser.add(new BoolSetting.Builder()
         .name("Highway Obstacle Passer")
         .description("Uses baritone to pass obstacles.")
@@ -205,13 +214,6 @@ public class GrimEfly extends Module {
     private BlockPos portalTrap = null;
 
     @EventHandler
-    private void onGameJoined(GameJoinedEvent event)
-    {
-        if (mc.player == null) return;
-        System.out.println(mc.player.getPos());
-    }
-
-    @EventHandler
     private void onReceivePacket(PacketEvent.Receive event)
     {
         if (event.packet instanceof PlayerSpawnPositionS2CPacket packet)
@@ -230,6 +232,7 @@ public class GrimEfly extends Module {
         tempPath = null;
         portalTrap = null;
         chestplateEquipped = false;
+        currJumpDelay = 0;
 
         if (bounce.get())
         {
@@ -285,6 +288,8 @@ public class GrimEfly extends Module {
     private BlockPos tempPath = null;
 
     private boolean chestplateEquipped = false;
+
+    private int currJumpDelay = 0;
 
     @EventHandler
     private void onTick(TickEvent.Pre event)
@@ -359,7 +364,6 @@ public class GrimEfly extends Module {
                     currDistance++;
                 }
                 // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
-                // TODO: Check that there is not a solid block on the goal or nonsolid block below
                 while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
                     mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL ||
                     mc.world.getBlockState(goal).isSolidBlock(mc.world, goal));
@@ -371,7 +375,15 @@ public class GrimEfly extends Module {
                 paused.set(false);
                 if (mc.player.isOnGround())
                 {
-                    mc.player.jump();
+                    if (currJumpDelay > 0)
+                    {
+                        currJumpDelay--;
+                    }
+                    else
+                    {
+                        mc.player.jump();
+                        currJumpDelay = jumpDelay.get();
+                    }
                 }
 
                 // set yaw and pitch
