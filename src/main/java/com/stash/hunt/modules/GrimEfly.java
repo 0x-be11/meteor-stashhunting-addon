@@ -3,6 +3,7 @@ package com.stash.hunt.modules;
 import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.GoalBlock;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
+import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.ChunkDataEvent;
 import meteordevelopment.meteorclient.events.world.PlaySoundEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -21,6 +22,8 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
 import net.minecraft.screen.slot.SlotActionType;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -198,11 +201,27 @@ public class GrimEfly extends Module {
     private boolean startSprinting;
     private BlockPos portalTrap = null;
 
+    @EventHandler
+    private void onGameJoined(GameJoinedEvent event)
+    {
+        if (mc.player == null) return;
+        System.out.println(mc.player.getPos());
+    }
+
+    @EventHandler
+    private void onReceivePacket(PacketEvent.Receive event)
+    {
+        if (event.packet instanceof PlayerSpawnPositionS2CPacket packet)
+        {
+            onActivate();
+        }
+    }
+
     @Override
     public void onActivate()
     {
-        if (mc.player == null) return;
-
+        if (mc.player == null || mc.player.getAbilities().allowFlying) return;
+        if (mc.player.getPos().multiply(1, 0, 1).length() < 100) return; // I don't know any other way to fix this stupid shit
         startSprinting = mc.player.isSprinting();
         paused.set(false);
         tempPath = null;
