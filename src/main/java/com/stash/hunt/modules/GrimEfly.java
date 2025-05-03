@@ -1,6 +1,9 @@
 package com.stash.hunt.modules;
 
 import baritone.api.BaritoneAPI;
+import baritone.api.event.events.PathEvent;
+import baritone.api.event.listener.AbstractGameEventListener;
+import baritone.api.event.listener.IGameEventListener;
 import baritone.api.pathing.goals.GoalBlock;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
@@ -226,36 +229,37 @@ public class GrimEfly extends Module {
         paused.set(false);
         tempPath = null;
         portalTrap = null;
+        chestplateEquipped = false;
+
         if (bounce.get())
         {
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
-        }
-        chestplateEquipped = false;
 
-        if (!useCustomStartPos.get())
-        {
-            startPos.set(new BlockPos(0, 0, 0));
-        }
+            if (!useCustomStartPos.get())
+            {
+                startPos.set(new BlockPos(0, 0, 0));
+            }
 
-        if (!useCustomYaw.get())
-        {
-            // If less than 100 blocks from the start pos, angle calculation may be wrong, so just use players yaw
-            if (mc.player.getBlockPos().getSquaredDistance(startPos.get()) < 10_000)
+            if (!useCustomYaw.get())
             {
-                double playerAngleNormalized = angleOnAxis(mc.player.getYaw());
-                yaw.set(playerAngleNormalized);
-            } else
-            {
-                // Otherwise use the angle from the starting position to the players position
-                BlockPos directionVec = mc.player.getBlockPos().subtract(startPos.get());
-                double angle = Math.toDegrees(Math.atan2(-directionVec.getX(), directionVec.getZ()));
-                double angleNormalized = angleOnAxis(angle);
-                if (!awayFromStartPos.get())
+                // If less than 100 blocks from the start pos, angle calculation may be wrong, so just use players yaw
+                if (mc.player.getBlockPos().getSquaredDistance(startPos.get()) < 10_000)
                 {
-                    angleNormalized += 180;
-                }
+                    double playerAngleNormalized = angleOnAxis(mc.player.getYaw());
+                    yaw.set(playerAngleNormalized);
+                } else
+                {
+                    // Otherwise use the angle from the starting position to the players position
+                    BlockPos directionVec = mc.player.getBlockPos().subtract(startPos.get());
+                    double angle = Math.toDegrees(Math.atan2(-directionVec.getX(), directionVec.getZ()));
+                    double angleNormalized = angleOnAxis(angle);
+                    if (!awayFromStartPos.get())
+                    {
+                        angleNormalized += 180;
+                    }
 
-                yaw.set(angleNormalized);
+                    yaw.set(angleNormalized);
+                }
             }
         }
     }
@@ -315,6 +319,7 @@ public class GrimEfly extends Module {
             // if still pathing, wait for that to complete
             if (highwayObstaclePasser.get() && BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().getGoal() != null)
             {
+                chestplateEquipped = false;
                 return;
             }
             // Length check to fix weird issue where goal gets set to 0 0 when going through queue, even though it gets reset. Likely due to bad connection.
@@ -354,7 +359,10 @@ public class GrimEfly extends Module {
                     currDistance++;
                 }
                 // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
-                while (mc.world.getBlockState(goal.down()).isAir() || mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL);
+                // TODO: Check that there is not a solid block on the goal or nonsolid block below
+                while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
+                    mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL ||
+                    mc.world.getBlockState(goal).isSolidBlock(mc.world, goal));
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
             }
             else
