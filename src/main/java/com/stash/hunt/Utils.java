@@ -126,6 +126,24 @@ public class Utils
         return perp.length();
     }
 
+    /**
+     * Returns the angle rounded to the closest main 8 axis'.
+     * @param yaw The yaw in degrees.
+     * @return The angle on the axis.
+     */
+    public static double angleOnAxis(double yaw)
+    {
+        if (yaw < 0) yaw += 360;
+        return Math.round(yaw / 45.0f) * 45;
+    }
+
+    public static Vec3d normalizedPositionOnAxis(Vec3d pos) {
+        double angle = -Math.atan2(pos.x, pos.z);
+        double angleDeg = Math.toDegrees(angle);
+
+        return positionInDirection(new Vec3d(0,0,0), angleOnAxis(angleDeg), 1);
+    }
+
     public static int totalInvCount(MinecraftClient mc, Item item) {
         if (mc.player == null) return 0;
         int itemCount = 0;
