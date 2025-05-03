@@ -10,6 +10,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
 import meteordevelopment.meteorclient.utils.world.TickRate;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PickItemFromEntityC2SPacket;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.text.Text;
@@ -40,6 +41,14 @@ public class AutoLogPlus extends Module
         .name("Log Armor")
         .description("Logs out if you have no armor.")
         .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Boolean> ignoreElytra = sgGeneral.add(new BoolSetting.Builder()
+        .name("Ignore Elytra")
+        .description("Ignores the elytra when checking for armor.")
+        .defaultValue(false)
+        .visible(logArmor::get)
         .build()
     );
 
@@ -217,6 +226,7 @@ public class AutoLogPlus extends Module
             for (int i = 0; i < 4; i++)
             {
                 ItemStack armorPiece = mc.player.getInventory().getArmorStack(i);
+                if (ignoreElytra.get() && armorPiece.getItem() == Items.ELYTRA) continue;
                 if (armorPiece.isDamageable())
                 {
                     int max = armorPiece.getMaxDamage();

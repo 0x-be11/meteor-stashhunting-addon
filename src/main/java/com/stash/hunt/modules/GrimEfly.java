@@ -39,8 +39,7 @@ import static com.stash.hunt.Utils.*;
 public class GrimEfly extends Module {
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
-    // TODO: Add setting to auto equip chestplate / hotbar elytra to prevent it breaking on reconnects
+    private final SettingGroup sgObstaclePasser = settings.createGroup("Obstacle Passer");
 
     private final Setting<Boolean> bounce = sgGeneral.add(new BoolSetting.Builder()
         .name("Bounce")
@@ -73,23 +72,55 @@ public class GrimEfly extends Module {
         .build()
     );
 
-    private final Setting<Double> yaw = sgGeneral.add(new DoubleSetting.Builder()
-        .name("Yaw")
-        .description("The yaw to set when bounce is enabled.")
-        .defaultValue(0.0)
-        .visible(() -> bounce.get() && lockYaw.get())
-        .build()
-    );
-
-    private final Setting<Boolean> highwayObstaclePasser = sgGeneral.add(new BoolSetting.Builder()
-        .name("Highway Obstacle Passer")
-        .description("Uses baritone to pass obstacles. Make sure to set the YAW lock as it uses this value to calculate the block to go to.")
+    private final Setting<Boolean> useCustomYaw = sgGeneral.add(new BoolSetting.Builder()
+        .name("Use Custom Yaw")
+        .description("Enable this if you want to use a yaw that isn't a factor of 45.")
         .defaultValue(false)
         .visible(bounce::get)
         .build()
     );
 
-    private final Setting<Double> distance = sgGeneral.add(new DoubleSetting.Builder()
+    private final Setting<Double> yaw = sgGeneral.add(new DoubleSetting.Builder()
+        .name("Yaw")
+        .description("The yaw to set when bounce is enabled. This is auto set to the closest 45 deg angle to you unless Use Custom Yaw is enabled.")
+        .defaultValue(0.0)
+        .visible(() -> bounce.get() && useCustomYaw.get())
+        .build()
+    );
+
+    private final Setting<Boolean> highwayObstaclePasser = sgObstaclePasser.add(new BoolSetting.Builder()
+        .name("Highway Obstacle Passer")
+        .description("Uses baritone to pass obstacles.")
+        .defaultValue(false)
+        .visible(bounce::get)
+        .build()
+    );
+
+    private final Setting<Boolean> useCustomStartPos = sgObstaclePasser.add(new BoolSetting.Builder()
+        .name("Use Custom Start Position")
+        .description("Enable and set this ONLY if you are on a ringroad. Otherwise (0, 0) is the start position and will be automatically used.")
+        .defaultValue(false)
+        .visible(() -> bounce.get() && highwayObstaclePasser.get())
+        .build()
+    );
+
+    private final Setting<BlockPos> startPos = sgObstaclePasser.add(new BlockPosSetting.Builder()
+        .name("Start Position")
+        .description("The start position to use when using a custom start position.")
+        .defaultValue(new BlockPos(0,0,0))
+        .visible(() -> bounce.get() && highwayObstaclePasser.get() && useCustomStartPos.get())
+        .build()
+    );
+
+    private final Setting<Boolean> awayFromStartPos = sgObstaclePasser.add(new BoolSetting.Builder()
+        .name("Away From Start Position")
+        .description("If true, will go away from the start position instead of towards it. The start pos is (0,0) if it is not set to a custom start pos.")
+        .defaultValue(true)
+        .visible(() -> bounce.get() && highwayObstaclePasser.get())
+        .build()
+    );
+
+    private final Setting<Double> distance = sgObstaclePasser.add(new DoubleSetting.Builder()
         .name("Distance")
         .description("The distance to set the baritone goal for path realignment.")
         .defaultValue(10.0)
@@ -97,7 +128,7 @@ public class GrimEfly extends Module {
         .build()
     );
 
-    private final Setting<Integer> targetY = sgGeneral.add(new IntSetting.Builder()
+    private final Setting<Integer> targetY = sgObstaclePasser.add(new IntSetting.Builder()
         .name("Y Level")
         .description("The Y level to bounce at.")
         .defaultValue(120)
@@ -105,15 +136,7 @@ public class GrimEfly extends Module {
         .build()
     );
 
-    private final Setting<Boolean> assumeHighwayDirs = sgGeneral.add(new BoolSetting.Builder()
-        .name("Lock To Highway Directions")
-        .description("Aligns you on the highways. Only works for the main 8 highway directions.")
-        .defaultValue(true)
-        .visible(() -> bounce.get() && highwayObstaclePasser.get())
-        .build()
-    );
-
-    private final Setting<Boolean> avoidPortalTraps = sgGeneral.add(new BoolSetting.Builder()
+    private final Setting<Boolean> avoidPortalTraps = sgObstaclePasser.add(new BoolSetting.Builder()
         .name("Avoid Portal Traps")
         .description("Will attempt to detect portal traps on chunk load and avoid them.")
         .defaultValue(false)
@@ -121,7 +144,7 @@ public class GrimEfly extends Module {
         .build()
     );
 
-    private final Setting<Double> portalAvoidDistance = sgGeneral.add(new DoubleSetting.Builder()
+    private final Setting<Double> portalAvoidDistance = sgObstaclePasser.add(new DoubleSetting.Builder()
         .name("Portal Avoid Distance")
         .description("The distance to a portal trap where the obstacle passer will takeover and go around it.")
         .defaultValue(20)
@@ -131,7 +154,7 @@ public class GrimEfly extends Module {
         .build()
     );
 
-    private final Setting<Integer> portalScanWidth = sgGeneral.add(new IntSetting.Builder()
+    private final Setting<Integer> portalScanWidth = sgObstaclePasser.add(new IntSetting.Builder()
         .name("Portal Scan Width")
         .description("The width on the axis of the highway that will be scanned for portal traps.")
         .defaultValue(5)
@@ -141,7 +164,7 @@ public class GrimEfly extends Module {
         .build()
     );
 
-    private final Setting<BlockPos> baritoneOffset = sgGeneral.add(new BlockPosSetting.Builder()
+    private final Setting<BlockPos> baritoneOffset = sgObstaclePasser.add(new BlockPosSetting.Builder()
         .name("Baritone Offset")
         .description("The offset in blocks from where goals should be set.")
         .defaultValue(new BlockPos(0,0,0))
@@ -179,6 +202,7 @@ public class GrimEfly extends Module {
     public void onActivate()
     {
         if (mc.player == null) return;
+
         startSprinting = mc.player.isSprinting();
         paused.set(false);
         tempPath = null;
@@ -188,6 +212,33 @@ public class GrimEfly extends Module {
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
         }
         chestplateEquipped = false;
+
+        if (!useCustomStartPos.get())
+        {
+            startPos.set(new BlockPos(0, 0, 0));
+        }
+
+        if (!useCustomYaw.get())
+        {
+            // If less than 100 blocks from the start pos, angle calculation may be wrong, so just use players yaw
+            if (mc.player.getBlockPos().getSquaredDistance(startPos.get()) < 10_000)
+            {
+                double playerAngleNormalized = angleOnAxis(mc.player.getYaw());
+                yaw.set(playerAngleNormalized);
+            } else
+            {
+                // Otherwise use the angle from the starting position to the players position
+                BlockPos directionVec = mc.player.getBlockPos().subtract(startPos.get());
+                double angle = Math.toDegrees(Math.atan2(-directionVec.getX(), directionVec.getZ()));
+                double angleNormalized = angleOnAxis(angle);
+                if (!awayFromStartPos.get())
+                {
+                    angleNormalized += 180;
+                }
+
+                yaw.set(angleNormalized);
+            }
+        }
     }
 
     @Override
@@ -242,7 +293,6 @@ public class GrimEfly extends Module {
                 return;
             }
 
-
             // if still pathing, wait for that to complete
             if (highwayObstaclePasser.get() && BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().getGoal() != null)
             {
@@ -255,14 +305,11 @@ public class GrimEfly extends Module {
                 || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get())
             {
                 paused.set(true);
-                double targetYaw = lockYaw.get() ? yaw.get() : mc.player.getYaw();
-                Vec3d pos;
                 BlockPos goal = mc.player.getBlockPos();
                 double currDistance = distance.get(); // Keep checking farther distances until a goal is found that has a block beneath it
 
-                BlockPos startPos = mc.player.getBlockPos(); // The start pos is what we start looking for a valid position from
                 if (portalTrap != null) {
-                    startPos = portalTrap;
+                    currDistance += mc.player.getPos().distanceTo(portalTrap.toCenterPos());
                     portalTrap = null;
                     info("Pathing around portal.");
                 }
@@ -275,17 +322,15 @@ public class GrimEfly extends Module {
                         BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
                         return;
                     }
-                    if (assumeHighwayDirs.get())
-                    {
-                        Vec3d playerPos = normalizedPositionOnAxis(startPos.toCenterPos()).multiply(startPos.toCenterPos().multiply(1,0,1).length());
-                        pos = positionInDirection(playerPos, targetYaw, currDistance);
-                    }
-                    else
-                    {
-                        // TODO: Make this better
-                        // Bug where currDistance always maxes out when on 1x2s next to highway
-                        pos = positionInDirection(startPos.toCenterPos(), targetYaw, currDistance);
-                    }
+                    Vec3d unitYawVec = yawToDirection(yaw.get());
+                    Vec3d travelVec = mc.player.getPos().subtract(startPos.get().toCenterPos());
+
+                    double parallelCurrPosDot = travelVec.multiply(new Vec3d(1, 0, 1)).dotProduct(unitYawVec);
+                    Vec3d parallelCurrPosComponent = unitYawVec.multiply(parallelCurrPosDot);
+
+                    Vec3d pos = startPos.get().toCenterPos().add(parallelCurrPosComponent);
+                    pos = positionInDirection(pos, yaw.get(), currDistance);
+
                     goal = new BlockPos((int)pos.x + baritoneOffset.get().getX(), targetY.get() + baritoneOffset.get().getY(), (int)pos.z + baritoneOffset.get().getZ());
                     currDistance++;
                 }
@@ -317,11 +362,8 @@ public class GrimEfly extends Module {
         if (!paused.get())
         {
             doGrimEflyStuff();
-
         }
     }
-
-
 
     @EventHandler
     private void onChunkData(ChunkDataEvent event)
@@ -385,15 +427,6 @@ public class GrimEfly extends Module {
         if (Utils.canOpenGui()) {
             mc.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(mc.player.currentScreenHandler.syncId));
         }
-    }
-
-    Vec3d normalizedPositionOnAxis(Vec3d pos) {
-        double angle = -Math.atan2(pos.x, pos.z);
-        double angleDeg = Math.toDegrees(angle);
-
-        double ordinalAngle = Math.round(angleDeg / 45.0f) * 45;
-
-        return positionInDirection(new Vec3d(0,0,0), ordinalAngle, 1);
     }
 
     @EventHandler
