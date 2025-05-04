@@ -103,6 +103,14 @@ public class GrimEfly extends Module {
         .build()
     );
 
+    private final Setting<Boolean> stuckDetection = sgGeneral.add(new BoolSetting.Builder()
+        .name("Stuck Detection")
+        .description("If you get stuck, the module will be toggled on and off.")
+        .defaultValue(false)
+        .visible(bounce::get)
+        .build()
+    );
+
     private final Setting<Boolean> highwayObstaclePasser = sgObstaclePasser.add(new BoolSetting.Builder()
         .name("Highway Obstacle Passer")
         .description("Uses baritone to pass obstacles.")
@@ -233,6 +241,8 @@ public class GrimEfly extends Module {
         portalTrap = null;
         chestplateEquipped = false;
         currJumpDelay = 0;
+        stuckTicks = 0;
+        stuckPos = null;
 
         if (bounce.get())
         {
@@ -291,6 +301,9 @@ public class GrimEfly extends Module {
 
     private int currJumpDelay = 0;
 
+    private int stuckTicks;
+    private BlockPos stuckPos;
+
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
@@ -327,11 +340,26 @@ public class GrimEfly extends Module {
                 chestplateEquipped = false;
                 return;
             }
+
+            if (stuckDetection.get())
+            {
+                if (stuckPos != null && mc.player.getBlockPos().getSquaredDistance(stuckPos) < 100)
+                {
+                    stuckTicks++;
+                }
+                else
+                {
+                    stuckTicks = 0;
+                    stuckPos = mc.player.getBlockPos();
+                }
+            }
+
             // Length check to fix weird issue where goal gets set to 0 0 when going through queue, even though it gets reset. Likely due to bad connection.
             if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && (mc.player.getY() < targetY.get()
                 || mc.player.getY() > targetY.get() + 2
                 || mc.player.horizontalCollision)
-                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get())
+                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()
+                || stuckTicks > 20 * 5)
             {
                 paused.set(true);
                 BlockPos goal = mc.player.getBlockPos();
@@ -366,7 +394,7 @@ public class GrimEfly extends Module {
                 // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
                 while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
                     mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL ||
-                    mc.world.getBlockState(goal).isSolidBlock(mc.world, goal));
+                    !mc.world.getBlockState(goal).isAir());
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
             }
             else
