@@ -1,7 +1,6 @@
 package com.stash.hunt.mixin;
 
 import com.stash.hunt.modules.GrimEfly;
-import com.stash.hunt.modules.PacketGrimFly;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
