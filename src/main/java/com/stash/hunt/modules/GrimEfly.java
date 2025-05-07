@@ -1,11 +1,7 @@
 package com.stash.hunt.modules;
 
 import baritone.api.BaritoneAPI;
-import baritone.api.event.events.PathEvent;
-import baritone.api.event.listener.AbstractGameEventListener;
-import baritone.api.event.listener.IGameEventListener;
 import baritone.api.pathing.goals.GoalBlock;
-import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.ChunkDataEvent;
 import meteordevelopment.meteorclient.events.world.PlaySoundEvent;
@@ -17,15 +13,13 @@ import meteordevelopment.meteorclient.systems.modules.player.ChestSwap;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
-import meteordevelopment.meteorclient.utils.world.TickRate;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
 import net.minecraft.screen.slot.SlotActionType;
 
@@ -202,11 +196,36 @@ public class GrimEfly extends Module {
         .build()
     );
 
+    private final Setting<Integer> delayLength = sgGeneral.add(new IntSetting.Builder()
+        .name("Delay Length")
+        .description("")
+        .defaultValue(2)
+        .min(0)
+        .sliderMax(100)
+        .build()
+    );
+
+    private final Setting<Integer> ticksbeforeDelay = sgGeneral.add(new IntSetting.Builder()
+        .name("Ticks before delay")
+        .description("")
+        .defaultValue(1)
+        .min(0)
+        .sliderMax(100)
+        .build()
+    );
+
     private final Setting<Boolean> paused = sgGeneral.add(new BoolSetting.Builder()
         .name("paused")
         .description("paused")
         .defaultValue(false)
         .visible(() -> false)
+        .build()
+    );
+
+    private final Setting<EntityPose> entityPose = sgGeneral.add(new EnumSetting.Builder<EntityPose>()
+        .name("EntityPose")
+        .description("The pose to set the player to.")
+        .defaultValue(EntityPose.STANDING)
         .build()
     );
 
@@ -230,6 +249,9 @@ public class GrimEfly extends Module {
         }
     }
 
+    int debugDelay = 0;
+    int debugDelay2 = 0;
+
     @Override
     public void onActivate()
     {
@@ -243,6 +265,8 @@ public class GrimEfly extends Module {
         currJumpDelay = 0;
         stuckTicks = 0;
         stuckPos = null;
+        debugDelay = 0;
+        debugDelay2 = 0;
 
         if (bounce.get())
         {
@@ -304,10 +328,45 @@ public class GrimEfly extends Module {
     private int stuckTicks;
     private BlockPos stuckPos;
 
+    int counter = 0;
+
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
         if (mc.player == null || mc.player.getAbilities().allowFlying) return;
+
+//        if (debugDelay > 0)
+//        {
+//            debugDelay--;
+//            return;
+//        }
+//        debugDelay = test.get();
+
+        if (!mc.player.isOnGround())
+        {
+            counter++;
+            if (counter > ticksbeforeDelay.get())
+            {
+                if (debugDelay > 0)
+                {
+//                    info("Delayed: " + debugDelay);
+                    debugDelay--;
+                    return;
+                }
+                else
+                {
+                    counter = 0;
+                    debugDelay = delayLength.get();
+
+                }
+            }
+
+//            info("Not delayed");
+        }
+
+
+
+
         if (autoEquipChestplate.get() && !chestplateEquipped)
         {
             if (!mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("chestplate")) {
