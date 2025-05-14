@@ -42,8 +42,6 @@ public class EntityMixin
     @Inject(at = @At("RETURN"), method = "adjustMovementForCollisions", cancellable = true)
     private void adjustMovementForCollisions(Vec3d movement, CallbackInfoReturnable<Vec3d> cir)
     {
-        if (mc == null || mc.player == null || this.uuid != mc.player.getUuid() || !Modules.get().get(ElytraFlyPlusPlus.class).enabled()) return;
-
         if (mc.player != null && this.uuid == mc.player.getUuid() && Modules.get().get(ElytraFlyPlusPlus.class).enabled() &&
             (Boolean)Modules.get().get(ElytraFlyPlusPlus.class).settings.get("fake-head-collision").get())
         {
