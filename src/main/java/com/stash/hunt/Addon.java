@@ -71,7 +71,7 @@ public class Addon extends MeteorAddon {
 
         if (baritoneLoaded)
         {
-            Modules.get().add(new GrimEfly());
+            Modules.get().add(new ElytraFlyPlusPlus());
         }
 
         Hud.get().register(Weather.INFO);

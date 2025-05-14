@@ -1,48 +1,28 @@
 package com.stash.hunt.modules;
 
 import baritone.api.BaritoneAPI;
-import baritone.api.event.events.PathEvent;
-import baritone.api.event.listener.AbstractGameEventListener;
-import baritone.api.event.listener.IGameEventListener;
 import baritone.api.pathing.goals.GoalBlock;
-import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.ChunkDataEvent;
-import meteordevelopment.meteorclient.events.world.PlaySoundEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.player.ChestSwap;
-import meteordevelopment.meteorclient.utils.Utils;
-import meteordevelopment.meteorclient.utils.player.FindItemResult;
-import meteordevelopment.meteorclient.utils.player.InvUtils;
-import meteordevelopment.meteorclient.utils.world.TickRate;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
-import net.minecraft.screen.slot.SlotActionType;
-
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import com.stash.hunt.Addon;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.List;
-
 import static com.stash.hunt.Utils.*;
 
-public class GrimEfly extends Module {
+public class ElytraFlyPlusPlus extends Module {
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgObstaclePasser = settings.createGroup("Obstacle Passer");
@@ -100,13 +80,6 @@ public class GrimEfly extends Module {
         .defaultValue(0)
         .min(0)
         .sliderMax(10)
-        .build()
-    );
-
-    private final Setting<Boolean> stuckDetection = sgGeneral.add(new BoolSetting.Builder()
-        .name("Stuck Detection")
-        .description("If you get stuck, the module will be toggled on and off.")
-        .defaultValue(false)
         .visible(bounce::get)
         .build()
     );
@@ -195,31 +168,24 @@ public class GrimEfly extends Module {
         .build()
     );
 
-    private final Setting<Boolean> autoEquipChestplate = sgGeneral.add(new BoolSetting.Builder()
-        .name("Auto Equip Chestplate")
-        .description("Equips a chestplate on activation. Fixes a bug on reconnect where you join wearing an elytra.")
+    private final Setting<Boolean> toggleElytra = sgGeneral.add(new BoolSetting.Builder()
+        .name("Toggle Elytra")
+        .description("Equips an elytra on activate, and a chestplate on deactivate.")
         .defaultValue(false)
         .build()
     );
 
-    private final Setting<Boolean> paused = sgGeneral.add(new BoolSetting.Builder()
-        .name("paused")
-        .description("paused")
-        .defaultValue(false)
-        .visible(() -> false)
-        .build()
-    );
-
-    public GrimEfly() {
+    public ElytraFlyPlusPlus() {
         super(
             Addon.CATEGORY,
-            "Grim-Efly",
-            "Vanilla efly using a chestplate so that elytra does not use durability. (Requires elytra in hotbar)"
+            "ElytraFlyPlusPlus",
+            "Elytra fly with some more features."
         );
     }
 
     private boolean startSprinting;
     private BlockPos portalTrap = null;
+    private boolean paused = false;
 
     @EventHandler
     private void onReceivePacket(PacketEvent.Receive event)
@@ -236,13 +202,10 @@ public class GrimEfly extends Module {
         if (mc.player == null || mc.player.getAbilities().allowFlying) return;
         if (mc.player.getPos().multiply(1, 0, 1).length() < 100) return; // I don't know any other way to fix this stupid shit
         startSprinting = mc.player.isSprinting();
-        paused.set(false);
         tempPath = null;
         portalTrap = null;
-        chestplateEquipped = false;
         currJumpDelay = 0;
-        stuckTicks = 0;
-        stuckPos = null;
+        paused = false;
 
         if (bounce.get())
         {
@@ -275,6 +238,13 @@ public class GrimEfly extends Module {
                 }
             }
         }
+
+        if (toggleElytra.get())
+        {
+            if (!mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("elytra")) {
+                Modules.get().get(ChestSwap.class).swap();
+            }
+        }
     }
 
     @Override
@@ -288,6 +258,13 @@ public class GrimEfly extends Module {
         }
 
         mc.player.setSprinting(startSprinting);
+
+        if (toggleElytra.get())
+        {
+            if (!mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("chestplate")) {
+                Modules.get().get(ChestSwap.class).swap();
+            }
+        }
     }
 
     // 5 chunks forwards
@@ -297,28 +274,12 @@ public class GrimEfly extends Module {
     // it will instead path to this and then when it gets close it will look for a valid block again
     private BlockPos tempPath = null;
 
-    private boolean chestplateEquipped = false;
-
     private int currJumpDelay = 0;
-
-    private int stuckTicks;
-    private BlockPos stuckPos;
 
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
         if (mc.player == null || mc.player.getAbilities().allowFlying) return;
-        if (autoEquipChestplate.get() && !chestplateEquipped)
-        {
-            if (!mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("chestplate")) {
-                Modules.get().get(ChestSwap.class).swap();
-                return;
-            }
-            else
-            {
-                chestplateEquipped = true;
-            }
-        }
 
         mc.player.setSprinting(true);
         if (bounce.get())
@@ -337,31 +298,16 @@ public class GrimEfly extends Module {
             // if still pathing, wait for that to complete
             if (highwayObstaclePasser.get() && BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().getGoal() != null)
             {
-                chestplateEquipped = false;
                 return;
-            }
-
-            if (stuckDetection.get())
-            {
-                if (stuckPos != null && mc.player.getBlockPos().getSquaredDistance(stuckPos) < 100)
-                {
-                    stuckTicks++;
-                }
-                else
-                {
-                    stuckTicks = 0;
-                    stuckPos = mc.player.getBlockPos();
-                }
             }
 
             // Length check to fix weird issue where goal gets set to 0 0 when going through queue, even though it gets reset. Likely due to bad connection.
             if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && (mc.player.getY() < targetY.get()
                 || mc.player.getY() > targetY.get() + 2
                 || mc.player.horizontalCollision)
-                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()
-                || stuckTicks > 20 * 5)
+                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get())
             {
-                paused.set(true);
+                paused = true;
                 BlockPos goal = mc.player.getBlockPos();
                 double currDistance = distance.get(); // Keep checking farther distances until a goal is found that has a block beneath it
 
@@ -400,7 +346,7 @@ public class GrimEfly extends Module {
             else
             {
                 // keep jumping
-                paused.set(false);
+                paused = false;
                 if (mc.player.isOnGround())
                 {
                     if (currJumpDelay > 0)
@@ -426,10 +372,18 @@ public class GrimEfly extends Module {
             }
         }
 
-        if (!paused.get())
+        if (!paused)
         {
-            doGrimEflyStuff();
+            mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(
+                mc.player,
+                ClientCommandC2SPacket.Mode.START_FALL_FLYING
+            ));
         }
+    }
+
+    public boolean enabled()
+    {
+        return this.isActive() && !paused;
     }
 
     @EventHandler
@@ -466,7 +420,7 @@ public class GrimEfly extends Module {
                         {
                             if (portalTrap == null || (
                                 portalTrap.getSquaredDistance(posBehind) > 100 &&
-                                mc.player.getBlockPos().getSquaredDistance(posBehind) < mc.player.getBlockPos().getSquaredDistance(portalTrap))
+                                    mc.player.getBlockPos().getSquaredDistance(posBehind) < mc.player.getBlockPos().getSquaredDistance(portalTrap))
                             )
                             {
                                 portalTrap = posBehind;
@@ -476,84 +430,5 @@ public class GrimEfly extends Module {
                 }
             }
         }
-    }
-
-
-    private void doGrimEflyStuff()
-    {
-
-        FindItemResult itemResult = InvUtils.findInHotbar(Items.ELYTRA);
-        if (!itemResult.found()) return;
-
-        swapToItem(itemResult.slot());
-
-        sendStartFlyingPacket();
-
-        swapToItem(itemResult.slot());
-
-        if (Utils.canOpenGui()) {
-            mc.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(mc.player.currentScreenHandler.syncId));
-        }
-    }
-
-    @EventHandler
-    private void onPlaySound(PlaySoundEvent event)
-    {
-        List<Identifier> armorEquipSounds = List.of(
-            Identifier.of("minecraft:item.armor.equip_generic"),
-            Identifier.of("minecraft:item.armor.equip_netherite"),
-            Identifier.of("minecraft:item.armor.equip_diamond"),
-            Identifier.of("minecraft:item.armor.equip_gold"),
-            Identifier.of("minecraft:item.armor.equip_iron"),
-            Identifier.of("minecraft:item.armor.equip_chain"),
-            Identifier.of("minecraft:item.armor.equip_leather"),
-            Identifier.of("minecraft:item.elytra.flying")
-        );
-        for (Identifier identifier : armorEquipSounds) {
-            if (identifier.equals(event.sound.getId())) {
-                event.cancel();
-                break;
-            }
-        }
-    }
-
-    // 38 is the meteor mapping for chestplate
-    // serverside uses default mappings: https://imgs.search.brave.com/cyvAxjIhLweeF1qeRXpC_8ESRlImhUmMGWbV_n2to_A/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jNGsz/LmdpdGh1Yi5pby93/aWtpLnZnL2ltYWdl/cy8xLzEzL0ludmVu/dG9yeS1zbG90cy5w/bmc
-    private void swapToItem(int slot) {
-        ItemStack chestItem = mc.player.getInventory().getStack(38);
-        ItemStack hotbarSwapItem = mc.player.getInventory().getStack(slot);
-
-        Int2ObjectMap<ItemStack> changedSlots = new Int2ObjectOpenHashMap<>();
-        changedSlots.put(6, hotbarSwapItem);
-        changedSlots.put(slot + 36, chestItem);
-
-        sendSwapPacket(changedSlots, slot);
-    }
-
-    private void sendStartFlyingPacket() {
-        if (mc.player == null) return;
-        mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(
-            mc.player,
-            ClientCommandC2SPacket.Mode.START_FALL_FLYING
-        ));
-    }
-
-    private void sendSwapPacket(Int2ObjectMap<ItemStack> changedSlots, int buttonNum) {
-        int syncId  = mc.player.currentScreenHandler.syncId;
-        int stateId = mc.player.currentScreenHandler.getRevision();
-
-        // "slotNum = 6"
-        // "buttonNum = 0"
-        // "SlotActionType.SWAP"
-        // "changedSlots" as built above
-        mc.player.networkHandler.sendPacket(new ClickSlotC2SPacket(
-            syncId,
-            stateId,
-            6,                 // slotNum
-            buttonNum,                 // buttonNum: the slot number thats being swapped
-            SlotActionType.SWAP,
-            new ItemStack(Items.AIR), // clickedItem
-            changedSlots
-        ));
     }
 }

@@ -1,9 +1,8 @@
 # jeff mod (For minecraft 1.21.1 and 1.21.4)
 #### Make an issue or DM me on discord `0x658` with any questions (Check the FAQ first)
 ## Features
-- GrimEfly (Credit to [Divined](https://github.com/cmg-divined) for help with this)
-  - Lets you fly with a chestplate on, which means you don't lose durability. An elytra is required in the hotbar.
-  - Has a bounce mode with a baritone highway obstacle passer.
+- ElytraFlyPlusPlus
+  - Has a bounce mode with a baritone obstacle passer for highways.
   - Bounce in 1x2 tunnels can reach up to 130bps. (Make sure to use ViaFabric 1.20.4 if having issues)
 - TrailFollower (Credit to [WarriorLost](https://github.com/warriorlost) for creating the original TrailFollower this was based off)
   - Follows trails in all dimensions using either pitch40 or baritone. May break on path splits or other cases.

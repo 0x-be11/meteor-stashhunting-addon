@@ -5,6 +5,7 @@
 
 package com.stash.hunt.modules;
 
+import com.stash.hunt.Addon;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -76,7 +77,7 @@ public class AutoEXPPlus extends Module {
     private int repairingI;
 
     public AutoEXPPlus() {
-        super(Categories.Combat, "auto-exp-plus", "Automatically repairs your armor and tools in pvp.");
+        super(Addon.CATEGORY, "auto-exp-plus", "Automatically repairs your armor and tools in pvp.");
     }
 
     @Override
