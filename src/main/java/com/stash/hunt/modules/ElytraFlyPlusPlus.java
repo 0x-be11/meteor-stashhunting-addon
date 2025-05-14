@@ -175,6 +175,13 @@ public class ElytraFlyPlusPlus extends Module {
         .build()
     );
 
+    public final Setting<Boolean> fakeHeadBlock = sgGeneral.add(new BoolSetting.Builder()
+        .name("fake-head-collision")
+        .description("Makes it seem like a block is above your head. Useful for bouncing in 1x2 tunnels to go over gaps.")
+        .defaultValue(false)
+        .build()
+    );
+
     public ElytraFlyPlusPlus() {
         super(
             Addon.CATEGORY,
@@ -281,7 +288,7 @@ public class ElytraFlyPlusPlus extends Module {
     {
         if (mc.player == null || mc.player.getAbilities().allowFlying) return;
 
-        mc.player.setSprinting(true);
+        if (enabled()) mc.player.setSprinting(true);
         if (bounce.get())
         {
             if (tempPath != null && mc.player.getBlockPos().getSquaredDistance(tempPath) < 500)
@@ -347,6 +354,7 @@ public class ElytraFlyPlusPlus extends Module {
             {
                 // keep jumping
                 paused = false;
+                if (!enabled()) return;
                 if (mc.player.isOnGround())
                 {
                     if (currJumpDelay > 0)
@@ -372,7 +380,7 @@ public class ElytraFlyPlusPlus extends Module {
             }
         }
 
-        if (!paused)
+        if (enabled())
         {
             mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(
                 mc.player,
@@ -383,7 +391,7 @@ public class ElytraFlyPlusPlus extends Module {
 
     public boolean enabled()
     {
-        return this.isActive() && !paused;
+        return this.isActive() && !paused && mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("elytra");
     }
 
     @EventHandler
