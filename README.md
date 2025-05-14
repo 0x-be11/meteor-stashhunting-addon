@@ -3,6 +3,7 @@
 ## Features
 - ElytraFlyPlusPlus
   - Has a bounce mode with a baritone obstacle passer for highways.
+  - Does not use durability after it drains to 1, but you cannot use fireworks at 1 durability.
   - Bounce in 1x2 tunnels can reach up to 130bps. (Make sure to use ViaFabric 1.20.4 if having issues)
 - TrailFollower (Credit to [WarriorLost](https://github.com/warriorlost) for creating the original TrailFollower this was based off)
   - Follows trails in all dimensions using either pitch40 or baritone. May break on path splits or other cases.
