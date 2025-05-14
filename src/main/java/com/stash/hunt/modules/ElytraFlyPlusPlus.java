@@ -216,7 +216,10 @@ public class ElytraFlyPlusPlus extends Module {
 
         if (bounce.get())
         {
-            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
+            if (BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() == null)
+            {
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
+            }
 
             if (!useCustomStartPos.get())
             {
@@ -261,7 +264,10 @@ public class ElytraFlyPlusPlus extends Module {
 
         if (bounce.get())
         {
-            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
+            if (BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() == null)
+            {
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoal(null);
+            }
         }
 
         mc.player.setSprinting(startSprinting);
@@ -391,7 +397,7 @@ public class ElytraFlyPlusPlus extends Module {
 
     public boolean enabled()
     {
-        return this.isActive() && !paused && mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("elytra");
+        return this.isActive() && !paused && mc.player != null && mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().toString().contains("elytra");
     }
 
     @EventHandler
