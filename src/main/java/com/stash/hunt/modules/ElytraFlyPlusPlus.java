@@ -513,14 +513,11 @@ public class ElytraFlyPlusPlus extends Module {
 
             if (!enabled()) return;
             ItemStack chestStack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
-            info("current damage: " + chestStack.getDamage());
-            info("max damage: " + (chestStack.getMaxDamage() - 1));
             if (chestStack.getDamage() >= chestStack.getMaxDamage() - 1)
             {
                 FindItemResult foundItem = InvUtils.find(item -> item.getItem() == Items.ELYTRA && item.getDamage() < item.getMaxDamage() - 1);
                 if (foundItem.found()) {
                     InvUtils.move().from(foundItem.slot()).toArmor(2);
-                    info("Swap");
                     swapBackSlot = foundItem.slot();
                     swapping = true;
                     swapTicks = swapToDelay.get();
