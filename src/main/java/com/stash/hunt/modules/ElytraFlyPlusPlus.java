@@ -2,6 +2,7 @@ package com.stash.hunt.modules;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.GoalBlock;
+import meteordevelopment.meteorclient.events.entity.player.InteractItemEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.ChunkDataEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -9,18 +10,26 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.player.ChestSwap;
+import meteordevelopment.meteorclient.utils.player.FindItemResult;
+import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.item.FireworkRocketItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
 
 import com.stash.hunt.Addon;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 
 import static com.stash.hunt.Utils.*;
+import static meteordevelopment.meteorclient.utils.Utils.rightClick;
 
 public class ElytraFlyPlusPlus extends Module {
 
@@ -182,6 +191,33 @@ public class ElytraFlyPlusPlus extends Module {
         .build()
     );
 
+    private final Setting<Boolean> autoSwapElytra = sgGeneral.add(new BoolSetting.Builder()
+        .name("auto-swap-on-firework")
+        .description("Swaps between a broken elytra and a non-broken one to be able to firework and lose minimal durability.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Integer> swapToDelay = sgGeneral.add(new IntSetting.Builder()
+        .name("swap-to-delay")
+        .description("The delay in ticks to swap to the non-broken elytra.")
+        .defaultValue(3)
+        .min(0)
+        .sliderMax(10)
+        .visible(autoSwapElytra::get)
+        .build()
+    );
+
+    private final Setting<Integer> swapBackDelay = sgGeneral.add(new IntSetting.Builder()
+        .name("swap-back-delay")
+        .description("The delay in ticks to swap back to the broken elytra.")
+        .defaultValue(3)
+        .min(0)
+        .sliderMax(10)
+        .visible(autoSwapElytra::get)
+        .build()
+    );
+
     public ElytraFlyPlusPlus() {
         super(
             Addon.CATEGORY,
@@ -193,6 +229,7 @@ public class ElytraFlyPlusPlus extends Module {
     private boolean startSprinting;
     private BlockPos portalTrap = null;
     private boolean paused = false;
+    private int swapBackSlot = -1; // slot used to hold the elytra slot when swapping to firework
 
     @EventHandler
     private void onReceivePacket(PacketEvent.Receive event)
@@ -213,6 +250,7 @@ public class ElytraFlyPlusPlus extends Module {
         portalTrap = null;
         currJumpDelay = 0;
         paused = false;
+        swapBackSlot = -1;
 
         if (bounce.get())
         {
@@ -289,10 +327,31 @@ public class ElytraFlyPlusPlus extends Module {
 
     private int currJumpDelay = 0;
 
+    private int swapTicks = 0;
+    private boolean swapping = false;
+
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
         if (mc.player == null || mc.player.getAbilities().allowFlying) return;
+
+        swapTicks--;
+        if (swapTicks <= 0)
+        {
+            if (swapping && swapBackSlot != -1)
+            {
+                mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                swapTicks = swapBackDelay.get();
+                swapping = false;
+            }
+            else if (swapBackSlot != -1)
+            {
+                InvUtils.move().fromArmor(2).to(swapBackSlot);
+                swapBackSlot = -1;
+            }
+
+        }
+
 
         if (enabled()) mc.player.setSprinting(true);
         if (bounce.get())
@@ -441,6 +500,27 @@ public class ElytraFlyPlusPlus extends Module {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    private void onInteractItem(InteractItemEvent event) {
+        if (!autoSwapElytra.get()) return;
+        ItemStack itemStack = mc.player.getStackInHand(event.hand);
+        if (itemStack.getItem() instanceof FireworkRocketItem && swapBackSlot == -1) {
+
+            if (!enabled()) return;
+            ItemStack chestStack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
+            if (chestStack.getDamage() >= chestStack.getMaxDamage() - 1)
+            {
+                FindItemResult foundItem = InvUtils.find(item -> item.getItem() == Items.ELYTRA && item.getDamage() < item.getMaxDamage() - 1);
+                if (foundItem.found()) {
+                    InvUtils.move().from(foundItem.slot()).toArmor(2);
+                    swapBackSlot = foundItem.slot();
+                    swapping = true;
+                    swapTicks = swapToDelay.get();
                 }
             }
         }
