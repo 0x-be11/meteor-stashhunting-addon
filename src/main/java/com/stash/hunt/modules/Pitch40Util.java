@@ -50,15 +50,7 @@ public class Pitch40Util extends Module {
     public final Setting<Integer> fireworkCooldownTicks = sgGeneral.add(new IntSetting.Builder()
         .name("Auto Firework Cooldown (ticks)")
         .description("Cooldown after using a firework in ticks.")
-        .defaultValue(300)
-        .visible(autoFirework::get)
-        .build()
-    );
-
-    public final Setting<Boolean> grimDura = sgGeneral.add(new BoolSetting.Builder()
-        .name("Require Elytra")
-        .description("Swaps to elytra before rocketing, fixes issues on mio grim dura.")
-        .defaultValue(false)
+        .defaultValue(10)
         .visible(autoFirework::get)
         .build()
     );
@@ -140,7 +132,7 @@ public class Pitch40Util extends Module {
                 if (autoFirework.get() && mc.player.getVelocity().y < velocityThreshold.get() && mc.player.getY() < (double)elytraFly.settings.get("pitch40-upper-bounds").get())
                 {
                     if (fireworkCooldown == 0) {
-                        int launchStatus = firework(mc, grimDura.get());
+                        int launchStatus = firework(mc, false);
                         if (launchStatus >= 0)
                         {
                             fireworkCooldown = fireworkCooldownTicks.get();
