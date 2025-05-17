@@ -406,7 +406,7 @@ public class ElytraFlyPlusPlus extends Module {
                     Vec3d pos = startPos.get().toCenterPos().add(parallelCurrPosComponent);
                     pos = positionInDirection(pos, yaw.get(), currDistance);
 
-                    goal = new BlockPos((int)pos.x + baritoneOffset.get().getX(), targetY.get() + baritoneOffset.get().getY(), (int)pos.z + baritoneOffset.get().getZ());
+                    goal = new BlockPos((int)(Math.floor(pos.x) + baritoneOffset.get().getX()), targetY.get() + baritoneOffset.get().getY(), (int)Math.floor(pos.z) + baritoneOffset.get().getZ());
                     currDistance++;
                 }
                 // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
