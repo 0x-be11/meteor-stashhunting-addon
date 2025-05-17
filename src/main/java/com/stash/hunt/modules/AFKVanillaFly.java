@@ -22,33 +22,11 @@ public class AFKVanillaFly extends Module {
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
-    public enum AutoFireworkMode {
-        VELOCITY,
-        TIMED_DELAY
-    }
-
-    private final Setting<AutoFireworkMode> fireworkMode = sgGeneral.add(new EnumSetting.Builder<AutoFireworkMode>()
-        .name("Auto Firework Mode")
-        .description("Choose between velocity-based or timed firework usage.")
-        .defaultValue(AutoFireworkMode.VELOCITY)
-        .build()
-    );
-
     private final Setting<Integer> fireworkDelay = sgGeneral.add(new IntSetting.Builder()
         .name("Timed Delay (ms)")
         .description("How long to wait between fireworks when using Timed Delay.")
-        .defaultValue(3000)
-        .sliderRange(0, 6000)
-        .visible(() -> fireworkMode.get() == AutoFireworkMode.TIMED_DELAY)
-        .build()
-    );
-
-    private final Setting<Double> velocityThreshold = sgGeneral.add(new DoubleSetting.Builder()
-        .name("Velocity Threshold")
-        .description("Use a firework if your horizontal speed is below this value.")
-        .defaultValue(0.7)
-        .sliderRange(0.1, 2.0)
-        .visible(() -> fireworkMode.get() == AutoFireworkMode.VELOCITY)
+        .defaultValue(4000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -62,7 +40,6 @@ public class AFKVanillaFly extends Module {
         }
     }
 
-    // this method is now then default logic, it did not need to be called in TrailFollower
     public void tickFlyLogic() {
         if (mc.player == null) return;
 
@@ -97,17 +74,9 @@ public class AFKVanillaFly extends Module {
             float pitchDiff = targetPitch - currentPitch;
             mc.player.setPitch(currentPitch + pitchDiff * 0.1f);
 
-            if (fireworkMode.get() == AutoFireworkMode.TIMED_DELAY) {
-                if (System.currentTimeMillis() - lastRocketUse > fireworkDelay.get()) {
-                    tryUseFirework();
-                }
-            } else if (fireworkMode.get() == AutoFireworkMode.VELOCITY) {
-                double horizontalSpeed = Math.sqrt(Math.pow(mc.player.getVelocity().x, 2) + Math.pow(mc.player.getVelocity().z, 2));
-                if (horizontalSpeed < velocityThreshold.get()) {
-                    tryUseFirework();
-                }
+            if (System.currentTimeMillis() - lastRocketUse > fireworkDelay.get()) {
+                tryUseFirework();
             }
-            //need this for initiate flying check if on ground, will configure in the future (won't affect grim fly since not being used)
         } else {
             if (!launched) {
                 mc.player.jump();
