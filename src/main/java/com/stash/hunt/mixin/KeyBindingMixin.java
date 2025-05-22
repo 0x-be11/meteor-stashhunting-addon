@@ -1,9 +1,6 @@
 package com.stash.hunt.mixin;
 
 import com.stash.hunt.modules.ElytraFlyPlusPlus;
-import com.stash.hunt.modules.PacketGrimFly;
-import meteordevelopment.meteorclient.settings.Setting;
-import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.client.option.KeyBinding;
 import org.spongepowered.asm.mixin.Final;
@@ -32,11 +29,6 @@ public abstract class KeyBindingMixin {
         // setting it beforehand caused a crash because meteor wasnt loaded yet
         efly = efly == null ? Modules.get().get(ElytraFlyPlusPlus.class) : efly;
         if (efly != null && efly.isActive() && efly.enabled() && translationKey.equals("key.forward"))
-        {
-            cir.setReturnValue(true);
-        }
-
-        if (translationKey.equals("key.forward") && Modules.get().get(PacketGrimFly.class).isActive() && mc.options.forwardKey.wasPressed())
         {
             cir.setReturnValue(true);
         }
