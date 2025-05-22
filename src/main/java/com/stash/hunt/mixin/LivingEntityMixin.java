@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
+import static meteordevelopment.meteorclient.utils.player.ChatUtils.info;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin
@@ -24,11 +25,12 @@ public abstract class LivingEntityMixin
     public abstract Brain<?> getBrain();
 
     Module noJumpDelay = Modules.get().get(com.stash.hunt.modules.NoJumpDelay.class);
+    ElytraFlyPlusPlus efly = Modules.get().get(ElytraFlyPlusPlus.class);
 
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/LivingEntity;tickMovement()V")
     private void tickMovement(CallbackInfo ci)
     {
-        if (mc.player != null && mc.player.getBrain().equals(this.getBrain()) && (Modules.get().get(ElytraFlyPlusPlus.class).enabled() || noJumpDelay.isActive()))
+        if (mc.player != null && mc.player.getBrain().equals(this.getBrain()) && efly != null && efly.enabled() || noJumpDelay.isActive())
         {
             this.jumpingCooldown = 0;
         }
@@ -37,7 +39,7 @@ public abstract class LivingEntityMixin
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/LivingEntity;isGliding()Z", cancellable = true)
     private void isGliding(CallbackInfoReturnable<Boolean> cir)
     {
-        if (mc.player != null && mc.player.getBrain().equals(this.getBrain()) && Modules.get().get(ElytraFlyPlusPlus.class).enabled())
+        if (mc.player != null && mc.player.getBrain().equals(this.getBrain()) && efly != null && efly.enabled())
         {
             cir.setReturnValue(true);
         }
