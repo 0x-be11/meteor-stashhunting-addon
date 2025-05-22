@@ -21,10 +21,12 @@ public class EntityMixin
     @Shadow
     protected UUID uuid;
 
+    ElytraFlyPlusPlus efly = Modules.get().get(ElytraFlyPlusPlus.class);
+
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;getPose()Lnet/minecraft/entity/EntityPose;", cancellable = true)
     private void getPose(CallbackInfoReturnable<EntityPose> cir)
     {
-        if (Modules.get().get(ElytraFlyPlusPlus.class).enabled() && this.uuid == mc.player.getUuid())
+        if (efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
         {
             cir.setReturnValue(EntityPose.STANDING);
         }
@@ -33,7 +35,7 @@ public class EntityMixin
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;isSprinting()Z", cancellable = true)
     private void isSprinting(CallbackInfoReturnable<Boolean> cir)
     {
-        if (Modules.get().get(ElytraFlyPlusPlus.class).enabled() && this.uuid == mc.player.getUuid())
+        if (efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
         {
             cir.setReturnValue(true);
         }
@@ -42,8 +44,8 @@ public class EntityMixin
     @Inject(at = @At("RETURN"), method = "adjustMovementForCollisions", cancellable = true)
     private void adjustMovementForCollisions(Vec3d movement, CallbackInfoReturnable<Vec3d> cir)
     {
-        if (mc.player != null && this.uuid == mc.player.getUuid() && Modules.get().get(ElytraFlyPlusPlus.class).enabled() &&
-            (Boolean)Modules.get().get(ElytraFlyPlusPlus.class).settings.get("fake-head-collision").get())
+        if (mc.player != null && this.uuid == mc.player.getUuid() &&
+            efly != null && efly.enabled() && (Boolean)Modules.get().get(ElytraFlyPlusPlus.class).settings.get("fake-head-collision").get())
         {
             Vec3d returnValue = cir.getReturnValue();
             if (Math.abs(returnValue.getY() - 0.42) < 0.1)
