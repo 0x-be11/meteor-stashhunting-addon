@@ -441,7 +441,8 @@ public class ElytraFlyPlusPlus extends Module {
                 // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
                 while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
                     mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL ||
-                    !mc.world.getBlockState(goal).isAir());
+                    !mc.world.getBlockState(goal).isAir() ||
+                    (fakeHeadBlock.get() && !mc.world.getBlockState(goal.up(2)).isSolidBlock(mc.world, goal.up(2))));
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
             }
             else
