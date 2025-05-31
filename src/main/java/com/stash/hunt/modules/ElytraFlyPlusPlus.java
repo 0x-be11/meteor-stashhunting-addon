@@ -251,6 +251,7 @@ public class ElytraFlyPlusPlus extends Module {
         currJumpDelay = 0;
         paused = false;
         swapBackSlot = -1;
+        waitingForChunksToLoad = false;
 
         if (bounce.get())
         {
@@ -330,6 +331,8 @@ public class ElytraFlyPlusPlus extends Module {
     private int swapTicks = 0;
     private boolean swapping = false;
 
+    private boolean waitingForChunksToLoad;
+
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
@@ -377,8 +380,10 @@ public class ElytraFlyPlusPlus extends Module {
             if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && (mc.player.getY() < targetY.get()
                 || mc.player.getY() > targetY.get() + 2
                 || mc.player.horizontalCollision)
-                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get())
+                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()
+                || waitingForChunksToLoad)
             {
+                waitingForChunksToLoad = false;
                 paused = true;
                 BlockPos goal = mc.player.getBlockPos();
                 double currDistance = distance.get(); // Keep checking farther distances until a goal is found that has a block beneath it
@@ -408,6 +413,13 @@ public class ElytraFlyPlusPlus extends Module {
 
                     goal = new BlockPos((int)(Math.floor(pos.x) + baritoneOffset.get().getX()), targetY.get() + baritoneOffset.get().getY(), (int)Math.floor(pos.z) + baritoneOffset.get().getZ());
                     currDistance++;
+
+                    // Blocks in unloaded chunks are void air, for some reason checking if the chunk is loaded was always true, so I check this instead
+                    if (mc.world.getBlockState(goal).getBlock() == Blocks.VOID_AIR)
+                    {
+                        waitingForChunksToLoad = true;
+                        return;
+                    }
                 }
                 // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
                 while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
