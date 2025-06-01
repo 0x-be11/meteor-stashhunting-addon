@@ -1,19 +1,23 @@
 package com.stash.hunt.mixin;
 
 import com.stash.hunt.modules.ElytraFlyPlusPlus;
+import com.stash.hunt.modules.PacketGrimFly;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.MovementType;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.UUID;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
+import static meteordevelopment.meteorclient.utils.player.ChatUtils.info;
 
 @Mixin(Entity.class)
 public class EntityMixin
@@ -26,7 +30,7 @@ public class EntityMixin
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;getPose()Lnet/minecraft/entity/EntityPose;", cancellable = true)
     private void getPose(CallbackInfoReturnable<EntityPose> cir)
     {
-        if (efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
+        if (Modules.get().get(PacketGrimFly.class).isActive() || efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
         {
             cir.setReturnValue(EntityPose.STANDING);
         }
@@ -35,7 +39,7 @@ public class EntityMixin
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;isSprinting()Z", cancellable = true)
     private void isSprinting(CallbackInfoReturnable<Boolean> cir)
     {
-        if (efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
+        if (Modules.get().get(PacketGrimFly.class).isActive() || efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
         {
             cir.setReturnValue(true);
         }
@@ -52,6 +56,15 @@ public class EntityMixin
             {
                 cir.setReturnValue(new Vec3d(returnValue.getX(), 0.2, returnValue.getZ()));
             }
+        }
+    }
+
+    @Inject(at = @At("HEAD"), method = "pushAwayFrom", cancellable = true)
+    private void pushAwayFrom(Entity entity, CallbackInfo ci)
+    {
+        if (mc.player != null && this.uuid == mc.player.getUuid() && efly != null && efly.enabled() && !entity.getUuid().equals(this.uuid))
+        {
+            ci.cancel();
         }
     }
 }
