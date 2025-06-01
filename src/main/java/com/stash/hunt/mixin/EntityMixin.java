@@ -1,7 +1,6 @@
 package com.stash.hunt.mixin;
 
 import com.stash.hunt.modules.ElytraFlyPlusPlus;
-import com.stash.hunt.modules.PacketGrimFly;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
@@ -30,7 +29,7 @@ public class EntityMixin
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;getPose()Lnet/minecraft/entity/EntityPose;", cancellable = true)
     private void getPose(CallbackInfoReturnable<EntityPose> cir)
     {
-        if (Modules.get().get(PacketGrimFly.class).isActive() || efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
+        if (efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
         {
             cir.setReturnValue(EntityPose.STANDING);
         }
@@ -39,7 +38,7 @@ public class EntityMixin
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/Entity;isSprinting()Z", cancellable = true)
     private void isSprinting(CallbackInfoReturnable<Boolean> cir)
     {
-        if (Modules.get().get(PacketGrimFly.class).isActive() || efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
+        if (efly != null && efly.enabled() && this.uuid == mc.player.getUuid())
         {
             cir.setReturnValue(true);
         }
