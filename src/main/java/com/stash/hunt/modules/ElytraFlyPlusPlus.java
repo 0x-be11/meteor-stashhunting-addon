@@ -10,6 +10,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.player.ChestSwap;
+import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
@@ -51,11 +52,27 @@ public class ElytraFlyPlusPlus extends Module {
         .build()
     );
 
+    private final Setting<Boolean> autoAdjustPitch = sgGeneral.add(new BoolSetting.Builder()
+        .name("Auto Adjust Pitch")
+        .description("Whether to auto adjust your pitch to stay at a set speed")
+        .defaultValue(false)
+        .visible(() -> bounce.get() && lockPitch.get())
+        .build()
+    );
+
     private final Setting<Double> pitch = sgGeneral.add(new DoubleSetting.Builder()
         .name("Pitch")
         .description("The pitch to set when bounce is enabled.")
         .defaultValue(90.0)
-        .visible(() -> bounce.get() && lockPitch.get())
+        .visible(() -> bounce.get() && lockPitch.get() && !autoAdjustPitch.get())
+        .build()
+    );
+
+    private final Setting<Double> speed = sgGeneral.add(new DoubleSetting.Builder()
+        .name("Speed")
+        .description("The speed in blocks per second to keep you at.")
+        .defaultValue(100.0)
+        .visible(() -> bounce.get() && lockPitch.get() && autoAdjustPitch.get())
         .build()
     );
 
@@ -251,6 +268,7 @@ public class ElytraFlyPlusPlus extends Module {
         currJumpDelay = 0;
         paused = false;
         swapBackSlot = -1;
+        waitingForChunksToLoad = false;
 
         if (bounce.get())
         {
@@ -330,6 +348,8 @@ public class ElytraFlyPlusPlus extends Module {
     private int swapTicks = 0;
     private boolean swapping = false;
 
+    private boolean waitingForChunksToLoad;
+
     @EventHandler
     private void onTick(TickEvent.Pre event)
     {
@@ -377,8 +397,10 @@ public class ElytraFlyPlusPlus extends Module {
             if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && (mc.player.getY() < targetY.get()
                 || mc.player.getY() > targetY.get() + 2
                 || mc.player.horizontalCollision)
-                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get())
+                || portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()
+                || waitingForChunksToLoad)
             {
+                waitingForChunksToLoad = false;
                 paused = true;
                 BlockPos goal = mc.player.getBlockPos();
                 double currDistance = distance.get(); // Keep checking farther distances until a goal is found that has a block beneath it
@@ -408,11 +430,19 @@ public class ElytraFlyPlusPlus extends Module {
 
                     goal = new BlockPos((int)(Math.floor(pos.x) + baritoneOffset.get().getX()), targetY.get() + baritoneOffset.get().getY(), (int)Math.floor(pos.z) + baritoneOffset.get().getZ());
                     currDistance++;
+
+                    // Blocks in unloaded chunks are void air, for some reason checking if the chunk is loaded was always true, so I check this instead
+                    if (mc.world.getBlockState(goal).getBlock() == Blocks.VOID_AIR)
+                    {
+                        waitingForChunksToLoad = true;
+                        return;
+                    }
                 }
                 // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
                 while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
                     mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL ||
-                    !mc.world.getBlockState(goal).isAir());
+                    !mc.world.getBlockState(goal).isAir() ||
+                    (fakeHeadBlock.get() && !mc.world.getBlockState(goal.up(2)).isSolidBlock(mc.world, goal.up(2))));
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
             }
             else
@@ -440,7 +470,15 @@ public class ElytraFlyPlusPlus extends Module {
                 }
                 if (lockPitch.get())
                 {
-                    mc.player.setPitch(pitch.get().floatValue());
+                    if (autoAdjustPitch.get())
+                    {
+                        double playerSpeed = Utils.getPlayerSpeed().multiply(1, 0, 1).length();
+                        mc.player.setPitch((float) Math.min(90, Math.max(-90, (speed.get() - playerSpeed) * 5)));
+                    }
+                    else
+                    {
+                        mc.player.setPitch(pitch.get().floatValue());
+                    }
                 }
             }
         }

@@ -48,7 +48,7 @@ public class SearchArea extends Module {
         .name("Path Gap")
         .description("The amount of chunks to space between each chunk path.")
         .defaultValue(12)
-        .min(0)
+        .min(1)
         .sliderRange(0, 32)
         .build()
     );
