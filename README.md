@@ -1,4 +1,5 @@
 # jeff mod (For minecraft 1.21.1 and 1.21.4)
+### 2b2t will be updating to 1.21.5 soon. When that happens this mod will update to 1.21.5 and no other versions will be supported going further.
 #### Make an issue or DM me on discord `0x658` with any questions (Check the FAQ first)
 ## Features
 - ElytraFlyPlusPlus
