@@ -23,14 +23,12 @@ import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
 
 import com.stash.hunt.Addon;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 
 import static com.stash.hunt.Utils.*;
-import static meteordevelopment.meteorclient.utils.Utils.rightClick;
 
 public class ElytraFlyPlusPlus extends Module {
 
@@ -97,16 +95,6 @@ public class ElytraFlyPlusPlus extends Module {
         .description("The yaw to set when bounce is enabled. This is auto set to the closest 45 deg angle to you unless Use Custom Yaw is enabled.")
         .defaultValue(0.0)
         .visible(() -> bounce.get() && useCustomYaw.get())
-        .build()
-    );
-
-    private final Setting<Integer> jumpDelay = sgGeneral.add(new IntSetting.Builder()
-        .name("Jump Delay")
-        .description("The delay between jumps in ticks. Useful for controlling speed in 1x2 tunnels.")
-        .defaultValue(0)
-        .min(0)
-        .sliderMax(10)
-        .visible(bounce::get)
         .build()
     );
 
@@ -265,7 +253,6 @@ public class ElytraFlyPlusPlus extends Module {
         startSprinting = mc.player.isSprinting();
         tempPath = null;
         portalTrap = null;
-        currJumpDelay = 0;
         paused = false;
         swapBackSlot = -1;
         waitingForChunksToLoad = false;
@@ -342,8 +329,6 @@ public class ElytraFlyPlusPlus extends Module {
     // a path used when there are no valid blocks in range.
     // it will instead path to this and then when it gets close it will look for a valid block again
     private BlockPos tempPath = null;
-
-    private int currJumpDelay = 0;
 
     private int swapTicks = 0;
     private boolean swapping = false;
@@ -452,15 +437,7 @@ public class ElytraFlyPlusPlus extends Module {
                 if (!enabled()) return;
                 if (mc.player.isOnGround())
                 {
-                    if (currJumpDelay > 0)
-                    {
-                        currJumpDelay--;
-                    }
-                    else
-                    {
-                        mc.player.jump();
-                        currJumpDelay = jumpDelay.get();
-                    }
+                    mc.player.jump();
                 }
 
                 // set yaw and pitch
