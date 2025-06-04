@@ -95,10 +95,17 @@ public class AutoPortal extends Module {
         index = 0;
         delay = 0;
 
-        // directly in front
+        // directly in front + block position check
         Direction forward = mc.player.getHorizontalFacing();
         Direction right = forward.rotateYClockwise();
-        BlockPos base = mc.player.getBlockPos()
+        BlockPos standingPos = mc.player.getBlockPos(); // temp mutable ref
+        BlockPos blockBelow = standingPos.down();
+        double blockHeight = mc.world.getBlockState(blockBelow).getCollisionShape(mc.world, blockBelow).getMax(Direction.Axis.Y);
+        // (height < 1.0)
+        if (blockHeight < 1.0) {
+            standingPos = standingPos.up();
+        }
+        BlockPos base = standingPos
             .offset(forward, 2)
             .offset(right, -1);
         // duplicate check
