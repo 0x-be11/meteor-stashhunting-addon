@@ -51,3 +51,5 @@
   - A: Search Area automatically saves your path, and will go back to where you left off if you start it again. If you want to make a new path, change the name or click the reset button.
 - Q: Why is my game crashing?
   - A: There is a known crash when switched the modes on Search Area while using it - don't do that. Another common crash is due to using PathSeeker with this mod, if you are using that, try removing it and see if it fixes it first. Otherwise, please make an issue or DM me the crash report found in .minecraft/crash-reports.
+
+# [Older Versions of Baritone / Meteor](https://maven.meteordev.org/#/snapshots/meteordevelopment/)
