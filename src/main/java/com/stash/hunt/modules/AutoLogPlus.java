@@ -10,11 +10,13 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
 import meteordevelopment.meteorclient.utils.world.TickRate;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.PickItemFromEntityC2SPacket;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.Item;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.util.math.BlockPos;
 
 public class AutoLogPlus extends Module
@@ -225,7 +227,14 @@ public class AutoLogPlus extends Module
         {
             for (int i = 0; i < 4; i++)
             {
-                ItemStack armorPiece = mc.player.getInventory().getArmorStack(i);
+                EquipmentSlot slot = null;
+                if (i == 0) { slot = EquipmentSlot.HEAD; }
+                else if (i == 1) { slot = EquipmentSlot.CHEST; }
+                else if (i == 2) { slot = EquipmentSlot.LEGS; }
+                else if (i == 3) { slot = EquipmentSlot.FEET; }
+                else { logOut("BRO I HAD A SEIZURE OR SM", true); }
+                //ItemStack armorPiece = mc.player.getInventory().getArmorStack(i);
+                ItemStack armorPiece = mc.player.getEquippedStack(slot);
                 if (ignoreElytra.get() && armorPiece.getItem() == Items.ELYTRA) continue;
                 if (armorPiece.isDamageable())
                 {

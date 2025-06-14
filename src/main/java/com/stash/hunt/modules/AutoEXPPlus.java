@@ -20,6 +20,8 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.Item;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.util.Hand;
 
 public class AutoEXPPlus extends Module {
@@ -89,9 +91,16 @@ public class AutoEXPPlus extends Module {
     private void onTick(TickEvent.Pre event) {
         if (repairingI == -1) {
             if (mode.get() != Mode.Hands) {
-                for (int i = 0; i < mc.player.getInventory().armor.size(); i++) {
-                    if (ignoreElytra.get() && mc.player.getInventory().armor.get(i).getItem() == Items.ELYTRA) continue;
-                    if (needsRepair(mc.player.getInventory().armor.get(i), minThreshold.get())) {
+                for (int i = 0; i < 4/*mc.player.getInventory().armor.size()*/; i++) {
+                    EquipmentSlot slot = null;
+                    if (i == 0) { slot = EquipmentSlot.HEAD; }
+                    else if (i == 1) { slot = EquipmentSlot.CHEST; }
+                    else if (i == 2) { slot = EquipmentSlot.LEGS; }
+                    else if (i == 3) { slot = EquipmentSlot.FEET; }
+                    //if (ignoreElytra.get() && mc.player.getInventory().armor.get(i).getItem() == Items.ELYTRA) continue;
+                    if (ignoreElytra.get() && mc.player.getEquippedStack(slot).getItem() == Items.ELYTRA) continue;
+                    //if (needsRepair(mc.player.getInventory().armor.get(i), minThreshold.get())) {
+                    if (needsRepair(mc.player.getEquippedStack(slot), minThreshold.get())) {
                         repairingI = SlotUtils.ARMOR_START + i;
                         break;
                     }
@@ -101,7 +110,7 @@ public class AutoEXPPlus extends Module {
             if (mode.get() != Mode.Armor && repairingI == -1) {
                 for (Hand hand : Hand.values()) {
                     if (needsRepair(mc.player.getStackInHand(hand), minThreshold.get())) {
-                        repairingI = hand == Hand.MAIN_HAND ? mc.player.getInventory().selectedSlot : SlotUtils.OFFHAND;
+                        repairingI = hand == Hand.MAIN_HAND ? mc.player.getInventory().getSelectedSlot() : SlotUtils.OFFHAND;
                         break;
                     }
                 }
